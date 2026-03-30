@@ -41,3 +41,16 @@ RUN git clone --depth 1 --branch v3.1.2 \
     cmake --install /src/svtav1/build && \
     ldconfig && \
     rm -rf /src
+
+FROM base AS build-libaom
+
+RUN git clone --depth 1 --branch v3.12.1 \
+        https://aomedia.googlesource.com/aom /src/aom && \
+    cmake -S /src/aom -B /src/aom_build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr/local \
+        -DBUILD_SHARED_LIBS=ON && \
+    cmake --build /src/aom_build -j$(nproc) && \
+    cmake --install /src/aom_build && \
+    ldconfig && \
+    rm -rf /src /src/aom_build
