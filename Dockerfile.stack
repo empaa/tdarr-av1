@@ -149,3 +149,7 @@ RUN git clone --depth 1 --branch v0.5.2 \
     cargo build --release && \
     cp target/release/av1an /usr/local/bin/ && \
     rm -rf /src
+
+FROM base AS build-ab-av1
+
+RUN cargo install ab-av1 --version 0.10.3 --root /usr/local
