@@ -54,3 +54,18 @@ RUN git clone --depth 1 --branch v3.12.1 \
     cmake --install /src/aom_build && \
     ldconfig && \
     rm -rf /src /src/aom_build
+
+FROM base AS build-libvmaf
+
+RUN git clone --depth 1 --branch v3.0.0 \
+        https://github.com/Netflix/vmaf.git /src/vmaf && \
+    meson setup /src/vmaf/libvmaf/build /src/vmaf/libvmaf \
+        --buildtype=release \
+        -Dbuilt_in_models=true \
+        -Dprefix=/usr/local && \
+    ninja -C /src/vmaf/libvmaf/build && \
+    ninja -C /src/vmaf/libvmaf/build install && \
+    mkdir -p /usr/local/share/vmaf && \
+    cp -r /src/vmaf/model/. /usr/local/share/vmaf/ && \
+    ldconfig && \
+    rm -rf /src
