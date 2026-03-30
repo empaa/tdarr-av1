@@ -1,0 +1,30 @@
+# syntax=docker/dockerfile:1
+
+FROM ubuntu:22.04 AS base
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
+
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    ninja-build \
+    meson \
+    nasm \
+    yasm \
+    autoconf \
+    automake \
+    libtool \
+    pkg-config \
+    python3-dev \
+    cython3 \
+    git \
+    wget \
+    curl \
+    libssl-dev \
+    && ln -sf /usr/bin/cython3 /usr/bin/cython \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Rust stable
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+ENV PATH="/root/.cargo/bin:${PATH}"
