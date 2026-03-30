@@ -28,3 +28,16 @@ RUN apt-get update && apt-get install -y \
 # Install Rust stable
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
 ENV PATH="/root/.cargo/bin:${PATH}"
+
+FROM base AS build-svtav1
+
+RUN git clone --depth 1 --branch v3.1.2 \
+        https://gitlab.com/AOMediaCodec/SVT-AV1.git /src/svtav1 && \
+    cmake -S /src/svtav1 -B /src/svtav1/build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr/local \
+        -DBUILD_SHARED_LIBS=ON && \
+    cmake --build /src/svtav1/build -j$(nproc) && \
+    cmake --install /src/svtav1/build && \
+    ldconfig && \
+    rm -rf /src
