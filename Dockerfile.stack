@@ -133,3 +133,19 @@ RUN git clone --depth 1 --recurse-submodules --shallow-submodules \
     ninja -C /src/lsmash/VapourSynth/build install && \
     ldconfig && \
     rm -rf /src
+
+FROM base AS build-av1an
+
+COPY --from=build-vapoursynth /usr/local /usr/local
+COPY --from=build-ffmpeg      /usr/local /usr/local
+RUN ldconfig
+
+COPY patches/av1an-vmaf.py /patches/av1an-vmaf.py
+
+RUN git clone --depth 1 --branch v0.5.2 \
+        https://github.com/master-of-zen/Av1an.git /src/av1an && \
+    cd /src/av1an && \
+    python3 /patches/av1an-vmaf.py && \
+    cargo build --release && \
+    cp target/release/av1an /usr/local/bin/ && \
+    rm -rf /src
