@@ -153,3 +153,18 @@ RUN git clone --depth 1 --branch v0.5.2 \
 FROM base AS build-ab-av1
 
 RUN cargo install ab-av1 --version 0.10.3 --root /usr/local
+
+FROM base AS final
+
+COPY --from=build-svtav1      /usr/local /usr/local
+COPY --from=build-libaom      /usr/local /usr/local
+COPY --from=build-libvmaf     /usr/local /usr/local
+COPY --from=build-vapoursynth /usr/local /usr/local
+COPY --from=build-ffmpeg      /usr/local /usr/local
+COPY --from=build-lsmash      /usr/local /usr/local
+COPY --from=build-av1an       /usr/local /usr/local
+COPY --from=build-ab-av1      /usr/local /usr/local
+
+RUN ldconfig && \
+    mkdir -p /etc/vapoursynth && \
+    echo "SystemPluginDir=/usr/local/lib/vapoursynth" > /etc/vapoursynth/vapoursynth.conf
