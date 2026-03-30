@@ -117,3 +117,19 @@ RUN wget -q https://ffmpeg.org/releases/ffmpeg-8.0.1.tar.xz -O /tmp/ffmpeg.tar.x
     make install && \
     ldconfig && \
     rm -rf /tmp/ffmpeg*
+
+FROM base AS build-lsmash
+
+COPY --from=build-vapoursynth /usr/local /usr/local
+COPY --from=build-ffmpeg      /usr/local /usr/local
+RUN ldconfig
+
+RUN git clone --depth 1 --recurse-submodules --shallow-submodules \
+        https://github.com/AkarinVS/L-SMASH-Works.git /src/lsmash && \
+    meson setup /src/lsmash/VapourSynth/build /src/lsmash/VapourSynth \
+        --buildtype=release \
+        --prefix=/usr/local && \
+    ninja -C /src/lsmash/VapourSynth/build && \
+    ninja -C /src/lsmash/VapourSynth/build install && \
+    ldconfig && \
+    rm -rf /src
