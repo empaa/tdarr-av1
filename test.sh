@@ -22,7 +22,9 @@ for platform in "${PLATFORMS[@]}"; do
   FAILED=0
   for bin in "${BINARIES[@]}"; do
     printf "  %-12s" "$bin"
-    if docker run --rm --platform "${platform}" "${IMAGE}" "$bin" --version > /dev/null 2>&1; then
+    version_flag="--version"
+    [[ "$bin" == "ffmpeg" ]] && version_flag="-version"
+    if docker run --rm --platform "${platform}" "${IMAGE}" "$bin" $version_flag > /dev/null 2>&1; then
       echo "OK"
     else
       echo "FAILED"
