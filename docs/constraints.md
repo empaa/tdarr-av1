@@ -19,19 +19,21 @@ errors at runtime.
 
 ---
 
-## VapourSynth R72
+## VapourSynth R73+
 
-**Constraint:** Must use exactly R72. Do not upgrade to R73+.
+**Constraint:** Must use R73 or later. Do not downgrade to R72 or earlier. Do not
+upgrade to R74 until it leaves RC.
 
-**Why:** VapourSynth R73 removed VSScript API v3. av1an 0.5.2 uses VSScript API v3
-to invoke VapourSynth. Upgrading breaks av1an.
+**Why:** av1an 0.5.2 uses the `vapoursynth-rs` Rust crate v0.5.1, which requires
+VSScript API v4. VapourSynth R72 only provides VSScript API v3 — av1an will fail
+to load VSScript at runtime. R73 is the first release with API v4.
 
 ---
 
-## SVT-AV1 3.1.2 + FFmpeg 8.0.1
+## SVT-AV1 4.1.0 + FFmpeg 8.1
 
-**Constraint:** SVT-AV1 v3.0+ changed its API. FFmpeg 8.0.1 is required for
-compatibility with SVT-AV1 3.1.2.
+**Constraint:** SVT-AV1 4.x requires FFmpeg 8.1 or later.
 
-**Why:** Earlier FFmpeg versions use the old SVT-AV1 API and fail to build with
-the new library.
+**Why:** FFmpeg 8.1 added `SVT_AV1_CHECK_VERSION(4, 0, 0)` guards in
+`libavcodec/libsvtav1.c`, handling both 3.x and 4.x APIs at compile time.
+Earlier FFmpeg versions do not know about the 4.x API and will fail to build.
