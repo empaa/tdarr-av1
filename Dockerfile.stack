@@ -79,7 +79,7 @@ RUN git clone --depth 1 --branch v3.0.0 \
 
 FROM base AS build-vapoursynth
 
-# Ubuntu 22.04 ships Cython 0.29.x; VapourSynth R72 requires Cython 3 (noexcept nogil syntax).
+# Ubuntu 22.04 ships Cython 0.29.x; VapourSynth R73 requires Cython 3 (noexcept nogil syntax).
 # Install Cython 3 via pip and force-override the system cython3 symlink so configure picks it up.
 RUN apt-get update && apt-get install -y python3-pip --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
