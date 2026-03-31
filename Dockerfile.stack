@@ -143,8 +143,12 @@ RUN git clone --depth 1 https://github.com/l-smash/l-smash.git /src/l-smash && \
     ldconfig && \
     rm -rf /src/l-smash
 
-RUN git clone --recurse-submodules \
-        https://github.com/AkarinVS/L-SMASH-Works.git /src/lsmash && \
+# Use HomeOfAviSynthPlusEvolution fork — AkarinVS is incompatible with FFmpeg 5+
+# (references AVStream.index_entries which was made private in FFmpeg commit cea7c19).
+# Pinned to a specific commit for reproducibility; update intentionally when needed.
+RUN git clone \
+        https://github.com/HomeOfAviSynthPlusEvolution/L-SMASH-Works.git /src/lsmash && \
+    git -C /src/lsmash checkout 0079a06ee384061ecdadd0de03df4e0493dd56ab && \
     meson setup /src/lsmash/VapourSynth/build /src/lsmash/VapourSynth \
         --buildtype=release \
         --prefix=/usr/local && \
