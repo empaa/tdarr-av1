@@ -22,6 +22,7 @@ RUN apt-get update && apt-get install -y \
     wget \
     curl \
     libssl-dev \
+    xxd \
     && ln -sf /usr/bin/cython3 /usr/bin/cython \
     && rm -rf /var/lib/apt/lists/*
 
@@ -208,3 +209,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends mkvtoolnix \
 RUN ldconfig && \
     mkdir -p /etc/vapoursynth && \
     echo "SystemPluginDir=/usr/local/lib/vapoursynth" > /etc/vapoursynth/vapoursynth.conf
+
+# av1an defaults to looking for vmaf_v0.6.1.json relative to CWD (/). Symlink
+# to the installed model so the default path resolves without --vmaf-path.
+RUN ln -sf /usr/local/share/vmaf/vmaf_v0.6.1.json /vmaf_v0.6.1.json \
+    && ln -sf /usr/local/share/vmaf/vmaf_4k_v0.6.1.json /vmaf_4k_v0.6.1.json

@@ -110,7 +110,7 @@ IMAGE="av1-stack-test:${ARCH}"
 SAMPLE_FILES=()
 while IFS= read -r -d '' f; do
   SAMPLE_FILES+=("$f")
-done < <(find "$SAMPLES_DIR" -maxdepth 1 -type f ! -name '.gitkeep' -print0)
+done < <(find "$SAMPLES_DIR" -maxdepth 1 -type f ! -name '.gitkeep' ! -name '.*' -print0)
 
 if [[ ${#SAMPLE_FILES[@]} -eq 0 ]]; then
   echo "WARNING: No sample files found in test/samples/ — skipping encode tests"
@@ -136,9 +136,9 @@ for sample in "${SAMPLE_FILES[@]}"; do
     "${IMAGE}" bash -c '
       set -e
       ffmpeg -y -ss 00:01:00 -t 60 -i "/samples/$1" -c copy "/output/$2_clip.mkv" 2>/dev/null
-      av1an -i "/output/$2_clip.mkv" --encoder aom --target-quality 90 -o "/output/$2_av1an_aom.mkv"
-      av1an -i "/output/$2_clip.mkv" --encoder svt-av1 --target-quality 90 -o "/output/$2_av1an_svtav1.mkv"
-      ab-av1 encode -i "/output/$2_clip.mkv" --min-vmaf 90 -o "/output/$2_ab-av1.mkv"
+      av1an -i "/output/$2_clip.mkv" --encoder aom --target-quality 90 --verbose -o "/output/$2_av1an_aom.mkv"
+      av1an -i "/output/$2_clip.mkv" --encoder svt-av1 --target-quality 90 --verbose -o "/output/$2_av1an_svtav1.mkv"
+      ab-av1 auto-encode -i "/output/$2_clip.mkv" --min-vmaf 90 -o "/output/$2_ab-av1.mkv"
     ' -- "$filename" "$stem" \
     || container_exit=$?
 
