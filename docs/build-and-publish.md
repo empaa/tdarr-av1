@@ -4,13 +4,25 @@ Read this before any build, test, or GHCR publish work.
 
 ---
 
-## Local test (run before merging)
+## Local test
 
+**Pre-merge** — builds both platforms, runs binary version checks:
 ```bash
 ./test.sh
 ```
 
-Builds `Dockerfile.stack` for linux/amd64 and linux/arm64, runs binary version checks (`av1an`, `ab-av1`, `ffmpeg`) on both platforms. Must pass before opening a PR to `main`.
+**Pre-release** — binary checks (native platform only) + real encode tests against `test/samples/`:
+```bash
+./test.sh --release
+```
+
+Place sample video files (≥2 min long) in `test/samples/` before running. Outputs land in `test/output/` for inspection.
+
+**Cache management:**
+```bash
+./test.sh --clean                 # remove cached images + wipe test/output/
+./test.sh --release --clean       # clean then do a full release test run
+```
 
 ## Local builds (manual)
 
@@ -24,22 +36,33 @@ Builds `Dockerfile.stack` for linux/amd64 and linux/arm64, runs binary version c
 ./build.sh --build-stack
 ```
 
-To push manually to GHCR, create a PAT at GitHub → Settings → Developer settings → Personal access tokens (classic) with `write:packages` scope, then:
+## Publish to GHCR
+
+Builds multi-platform images (linux/amd64 + linux/arm64) and pushes them to GHCR.
+Run this from the M1 Mac — arm64 compiles natively, amd64 via Rosetta/QEMU (reliable).
+On Intel/AMD Linux, arm64 still uses QEMU and may segfault on the SVT-AV1 compile.
+
+**One-time setup** — create a PAT at GitHub → Settings → Developer settings → Personal access tokens (classic) with `write:packages` scope, then:
 ```bash
 echo <TOKEN> | docker login ghcr.io -u <your-github-username> --password-stdin
 ```
 
-## CI workflows
-
-| Workflow | Trigger | What it does |
-|---|---|---|
-| `publish.yml` | Push to `main` | Builds and pushes av1-stack, then tdarr + tdarr_node (amd64+arm64) to GHCR |
+**Publish:**
+```bash
+./publish.sh
+```
 
 ## Merge workflow
 
 1. Run `./test.sh` locally — must pass
 2. Open PR from `dev` to `main`
-3. Merge — `publish.yml` fires automatically
+3. Merge
+
+## Release workflow
+
+1. Run `./test.sh --release` locally — must pass (requires sample files in `test/samples/`)
+2. Merge `dev` → `main`
+3. Run `./publish.sh` — builds and pushes to GHCR (~45 min from Mac)
 
 ## Binary list
 
