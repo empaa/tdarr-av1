@@ -91,9 +91,10 @@ RUN git clone --depth 1 --branch release-3.0.5 \
     make install && \
     ldconfig
 
-# Build VapourSynth R72
-# MUST be exactly R72 — R73 removed VSScript API v3 which av1an requires
-RUN git clone --depth 1 --branch R72 \
+# MUST be R73 or later — av1an 0.5.2 uses vapoursynth-rs v0.5.1 which requires
+# VSScript API v4. R72 only provides API v3 and will fail to load at runtime.
+# Do not upgrade to R74 until it leaves RC.
+RUN git clone --depth 1 --branch R73 \
         https://github.com/vapoursynth/vapoursynth.git /src/vapoursynth && \
     cd /src/vapoursynth && \
     ./autogen.sh && \
