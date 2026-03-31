@@ -31,7 +31,7 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 
 FROM base AS build-svtav1
 
-RUN git clone --depth 1 --branch v3.1.2 \
+RUN git clone --depth 1 --branch v4.1.0 \
         https://gitlab.com/AOMediaCodec/SVT-AV1.git /src/svtav1 && \
     cmake -S /src/svtav1 -B /src/svtav1/build \
         -G Ninja \
@@ -116,9 +116,9 @@ COPY --from=build-libaom  /usr/local /usr/local
 COPY --from=build-libvmaf /usr/local /usr/local
 RUN ldconfig
 
-RUN wget -q https://ffmpeg.org/releases/ffmpeg-8.0.1.tar.xz -O /tmp/ffmpeg.tar.xz && \
+RUN wget -q https://ffmpeg.org/releases/ffmpeg-8.1.tar.xz -O /tmp/ffmpeg.tar.xz && \
     tar xf /tmp/ffmpeg.tar.xz -C /tmp && \
-    cd /tmp/ffmpeg-8.0.1 && \
+    cd /tmp/ffmpeg-8.1 && \
     ./configure \
         --prefix=/usr/local \
         --enable-gpl \
