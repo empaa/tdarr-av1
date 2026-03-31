@@ -4,13 +4,25 @@ Read this before any build, test, or GHCR publish work.
 
 ---
 
-## Local test (run before merging)
+## Local test
 
+**Pre-merge** — builds both platforms, runs binary version checks:
 ```bash
 ./test.sh
 ```
 
-Builds `Dockerfile.stack` for linux/amd64 and linux/arm64, runs binary version checks (`av1an`, `ab-av1`, `ffmpeg`) on both platforms. Must pass before opening a PR to `main`.
+**Pre-release** — binary checks (native platform only) + real encode tests against `test/samples/`:
+```bash
+./test.sh --release
+```
+
+Place sample video files (≥2 min long) in `test/samples/` before running. Outputs land in `test/output/` for inspection.
+
+**Cache management:**
+```bash
+./test.sh --clean                 # remove cached images + wipe test/output/
+./test.sh --release --clean       # clean then do a full release test run
+```
 
 ## Local builds (manual)
 
@@ -40,6 +52,11 @@ echo <TOKEN> | docker login ghcr.io -u <your-github-username> --password-stdin
 1. Run `./test.sh` locally — must pass
 2. Open PR from `dev` to `main`
 3. Merge — `publish.yml` fires automatically
+
+## Release workflow
+
+1. Run `./test.sh --release` locally — must pass (requires sample files in `test/samples/`)
+2. Merge to `main` — `publish.yml` publishes to GHCR
 
 ## Binary list
 
