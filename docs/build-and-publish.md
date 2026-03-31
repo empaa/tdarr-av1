@@ -10,7 +10,7 @@ Read this before any build, test, or GHCR publish work.
 ./test.sh
 ```
 
-Builds `Dockerfile.stack` for linux/amd64, runs binary version checks (`av1an`, `ab-av1`, `ffmpeg`). Must pass before opening a PR to `main`.
+Builds `Dockerfile.stack` for linux/amd64 and linux/arm64, runs binary version checks (`av1an`, `ab-av1`, `ffmpeg`) on both platforms. Must pass before opening a PR to `main`.
 
 ## Local builds (manual)
 
@@ -33,16 +33,14 @@ echo <TOKEN> | docker login ghcr.io -u <your-github-username> --password-stdin
 
 | Workflow | Trigger | What it does |
 |---|---|---|
-| `test.yml` | PR to `main`, manual dispatch | Builds `Dockerfile.stack` (amd64), runs binary checks. Gates merge via "Tests passed" |
 | `publish.yml` | Push to `main` | Builds and pushes av1-stack, then tdarr + tdarr_node (amd64+arm64) to GHCR |
 
 ## Merge workflow
 
 1. Run `./test.sh` locally — must pass
 2. Open PR from `dev` to `main`
-3. Wait for `test.yml` to pass on GitHub (failsafe)
-4. Merge — `publish.yml` fires automatically
+3. Merge — `publish.yml` fires automatically
 
 ## Binary list
 
-`test.sh` and `test.yml` keep the same binary list in sync manually. Current: `av1an`, `ab-av1`, `ffmpeg`. Update both when new binaries are confirmed in `Dockerfile.stack`.
+`test.sh` checks these binaries on both platforms. Current: `av1an`, `ab-v1`, `ffmpeg`. Update when new binaries are confirmed in `Dockerfile.stack`.
