@@ -3,10 +3,11 @@ set -euo pipefail
 
 REGISTRY="ghcr.io/empaa"
 
-# Verify GHCR login before starting a ~45-min build
+# Quick pre-check: fails if ghcr.io has never been configured locally.
+# Does NOT verify token validity — if the push fails mid-build, re-run docker login.
 if ! grep -q "ghcr.io" "${HOME}/.docker/config.json" 2>/dev/null; then
-    echo "Error: not logged in to GHCR. Run:"
-    echo "  echo <TOKEN> | docker login ghcr.io -u <YOUR_USERNAME> --password-stdin"
+    echo "Error: ghcr.io not found in ~/.docker/config.json."
+    echo "Run: echo <TOKEN> | docker login ghcr.io -u <YOUR_USERNAME> --password-stdin"
     echo "See docs/build-and-publish.md for instructions."
     exit 1
 fi
