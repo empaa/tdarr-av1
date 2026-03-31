@@ -42,9 +42,16 @@ Builds multi-platform images (linux/amd64 + linux/arm64) and pushes them to GHCR
 Run this from the M1 Mac — arm64 compiles natively, amd64 via Rosetta/QEMU (reliable).
 On Intel/AMD Linux, arm64 still uses QEMU and may segfault on the SVT-AV1 compile.
 
-**One-time setup** — create a PAT at GitHub → Settings → Developer settings → Personal access tokens (classic) with `write:packages` scope, then:
+**One-time setup per machine:**
+
+1. Create a PAT at GitHub → Settings → Developer settings → Personal access tokens (classic) with `write:packages` scope, then:
 ```bash
 echo <TOKEN> | docker login ghcr.io -u <your-github-username> --password-stdin
+```
+
+2. Create the multi-platform buildx builder (persists across sessions):
+```bash
+docker buildx create --name multiplatform --driver docker-container --use
 ```
 
 **Publish:**
