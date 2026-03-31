@@ -114,12 +114,10 @@ RUN ldconfig
 
 ### `build-tdarr.yml`
 
-- **Triggers:** `workflow_dispatch`, push to `Dockerfile.tdarr` or `Dockerfile.tdarr_node`, weekly schedule
+- **Triggers:** `workflow_dispatch`, push to `Dockerfile.tdarr` or `Dockerfile.tdarr_node`
 - **What it does:** Pulls `av1-stack:latest` from GHCR; builds and pushes `tdarr:latest` and `tdarr_node:latest`
 - **Duration:** ~5 min (no recompilation)
 - **Auth:** `GITHUB_TOKEN` with `packages: write`
-
-The weekly schedule ensures Tdarr upstream releases are picked up without manual intervention.
 
 ---
 
