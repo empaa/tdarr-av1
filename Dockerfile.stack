@@ -142,7 +142,7 @@ RUN git clone --depth 1 https://github.com/l-smash/l-smash.git /src/l-smash && \
     ldconfig && \
     rm -rf /src/l-smash
 
-RUN git clone --depth 1 --recurse-submodules --shallow-submodules \
+RUN git clone --recurse-submodules \
         https://github.com/AkarinVS/L-SMASH-Works.git /src/lsmash && \
     meson setup /src/lsmash/VapourSynth/build /src/lsmash/VapourSynth \
         --buildtype=release \
