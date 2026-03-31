@@ -198,6 +198,10 @@ COPY --from=build-lsmash      /usr/local /usr/local
 COPY --from=build-av1an       /usr/local /usr/local
 COPY --from=build-ab-av1      /usr/local /usr/local
 
+# Ubuntu 22.04 Python uses dist-packages; VapourSynth installs to site-packages.
+# Set PYTHONPATH so getVSScriptAPI can import the vapoursynth module at runtime.
+ENV PYTHONPATH=/usr/local/lib/python3.10/site-packages
+
 RUN ldconfig && \
     mkdir -p /etc/vapoursynth && \
     echo "SystemPluginDir=/usr/local/lib/vapoursynth" > /etc/vapoursynth/vapoursynth.conf
