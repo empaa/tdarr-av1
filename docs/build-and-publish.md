@@ -43,4 +43,4 @@ echo <TOKEN> | docker login ghcr.io -u <your-github-username> --password-stdin
 
 ## Binary list
 
-`test.sh` checks these binaries on both platforms. Current: `av1an`, `ab-v1`, `ffmpeg`. Update when new binaries are confirmed in `Dockerfile.stack`.
+`test.sh` checks these binaries on both platforms. Current: `av1an`, `ab-av1`, `ffmpeg`. Update when new binaries are confirmed in `Dockerfile.stack`.
