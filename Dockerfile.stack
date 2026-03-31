@@ -180,7 +180,7 @@ RUN git clone --depth 1 --branch v0.5.2 \
 
 FROM base AS build-ab-av1
 
-RUN cargo install ab-av1 --version 0.10.3 --root /usr/local
+RUN cargo install ab-av1 --version 0.11.2 --root /usr/local
 
 FROM base AS final
 
