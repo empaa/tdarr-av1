@@ -133,6 +133,15 @@ COPY --from=build-vapoursynth /usr/local /usr/local
 COPY --from=build-ffmpeg      /usr/local /usr/local
 RUN ldconfig
 
+# Build l-smash library first — required by L-SMASH-Works
+RUN git clone --depth 1 https://github.com/l-smash/l-smash.git /src/l-smash && \
+    cd /src/l-smash && \
+    ./configure --prefix=/usr/local --enable-shared && \
+    make -j$(nproc) && \
+    make install && \
+    ldconfig && \
+    rm -rf /src/l-smash
+
 RUN git clone --depth 1 --recurse-submodules --shallow-submodules \
         https://github.com/AkarinVS/L-SMASH-Works.git /src/lsmash && \
     meson setup /src/lsmash/VapourSynth/build /src/lsmash/VapourSynth \
