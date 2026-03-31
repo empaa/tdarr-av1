@@ -7,49 +7,37 @@ on:
 
 jobs:
   build-and-test:
-    name: Build and test ${{ matrix.image }} (${{ matrix.platform }})
+    name: Build and test stack (linux/amd64)
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        image: [tdarr, tdarr_node]
-        platform: [linux/amd64, linux/arm64]
-        include:
-          - image: tdarr
-            dockerfile: Dockerfile.tdarr
-          - image: tdarr_node
-            dockerfile: Dockerfile.tdarr_node
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build ${{ matrix.image }} for ${{ matrix.platform }}
+      - name: Build av1-stack
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ${{ matrix.dockerfile }}
-          platforms: ${{ matrix.platform }}
-          outputs: type=docker,dest=/tmp/test-image.tar
-          tags: test-${{ matrix.image }}:local
+          file: Dockerfile.stack
+          target: final
+          platforms: linux/amd64
+          outputs: type=docker,dest=/tmp/av1-stack.tar
+          tags: av1-stack-test:local
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Load image
-        run: docker load --input /tmp/test-image.tar
+        run: docker load --input /tmp/av1-stack.tar
 
-      - name: Test binaries in ${{ matrix.image }} (${{ matrix.platform }})
+      - name: Test binaries
         run: |
-          # Update this list as custom binaries are added to the Dockerfiles
-          BINARIES=(av1an ab-av1)
+          # Update this list as custom binaries are added to Dockerfile.stack
+          BINARIES=(av1an ab-av1 ffmpeg vspipe)
           for bin in "${BINARIES[@]}"; do
             echo "=== Testing $bin ==="
-            docker run --rm --platform "${{ matrix.platform }}" test-${{ matrix.image }}:local "$bin" --version
+            docker run --rm av1-stack-test:local "$bin" --version
           done
 
   summary:
@@ -61,7 +49,7 @@ jobs:
       - name: Check all jobs passed
         run: |
           if [[ "${{ needs.build-and-test.result }}" != "success" ]]; then
-            echo "One or more test jobs failed or were cancelled"
+            echo "Test job failed or was cancelled"
             exit 1
           fi
-          echo "All test jobs passed"
+          echo "All tests passed"
