@@ -171,6 +171,8 @@ COPY --from=build-vapoursynth /usr/local /usr/local
 COPY --from=build-ffmpeg      /usr/local /usr/local
 RUN ldconfig
 
+ENV VAPOURSYNTH_LIB_DIR=/usr/local/lib
+
 COPY patches/av1an-vmaf.py /patches/av1an-vmaf.py
 
 RUN git clone --depth 1 --branch v0.5.2 \
