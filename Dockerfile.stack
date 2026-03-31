@@ -45,8 +45,13 @@ RUN git clone --depth 1 --branch v3.1.2 \
 
 FROM base AS build-libaom
 
-RUN git clone --depth 1 --branch v3.12.1 \
-        https://aomedia.googlesource.com/aom /src/aom && \
+# Use official tarball from storage.googleapis.com (stable release channel).
+# aomedia.googlesource.com can be slow or unavailable during builds.
+RUN wget -q "https://storage.googleapis.com/aom-releases/libaom-3.13.2.tar.gz" \
+        -O /tmp/libaom.tar.gz && \
+    mkdir -p /src/aom && \
+    tar -xf /tmp/libaom.tar.gz -C /src/aom --strip-components=1 && \
+    rm /tmp/libaom.tar.gz && \
     cmake -S /src/aom -B /src/aom_build \
         -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
@@ -55,7 +60,7 @@ RUN git clone --depth 1 --branch v3.12.1 \
     cmake --build /src/aom_build -j$(nproc) && \
     cmake --install /src/aom_build && \
     ldconfig && \
-    rm -rf /src /src/aom_build
+    rm -rf /src/aom /src/aom_build
 
 FROM base AS build-libvmaf
 
