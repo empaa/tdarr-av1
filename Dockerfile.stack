@@ -139,6 +139,9 @@ COPY --from=build-vapoursynth /usr/local /usr/local
 COPY --from=build-ffmpeg      /usr/local /usr/local
 RUN ldconfig
 
+RUN apt-get update && apt-get install -y --no-install-recommends libxxhash-dev \
+    && rm -rf /var/lib/apt/lists/*
+
 # Build l-smash library first — required by L-SMASH-Works
 RUN git clone --depth 1 --branch v2.14.5 https://github.com/l-smash/l-smash.git /src/l-smash && \
     cd /src/l-smash && \
