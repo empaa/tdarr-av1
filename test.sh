@@ -133,13 +133,14 @@ for sample in "${SAMPLE_FILES[@]}"; do
   docker run --rm \
     -v "${SAMPLES_DIR}:/samples:ro" \
     -v "${OUTPUT_DIR}:/output" \
-    "${IMAGE}" bash -c "
+    "${IMAGE}" bash -c '
       set -e
-      ffmpeg -y -ss 00:01:00 -t 60 -i /samples/${filename} -c copy /output/${stem}_clip.mkv 2>/dev/null
-      av1an -i /output/${stem}_clip.mkv --encoder aom --target-quality 90 -o /output/${stem}_av1an_aom.mkv
-      av1an -i /output/${stem}_clip.mkv --encoder svt-av1 --target-quality 90 -o /output/${stem}_av1an_svtav1.mkv
-      ab-av1 encode -i /output/${stem}_clip.mkv --min-vmaf 90 -o /output/${stem}_ab-av1.mkv
-    " || container_exit=$?
+      ffmpeg -y -ss 00:01:00 -t 60 -i "/samples/$1" -c copy "/output/$2_clip.mkv" 2>/dev/null
+      av1an -i "/output/$2_clip.mkv" --encoder aom --target-quality 90 -o "/output/$2_av1an_aom.mkv"
+      av1an -i "/output/$2_clip.mkv" --encoder svt-av1 --target-quality 90 -o "/output/$2_av1an_svtav1.mkv"
+      ab-av1 encode -i "/output/$2_clip.mkv" --min-vmaf 90 -o "/output/$2_ab-av1.mkv"
+    ' -- "$filename" "$stem" \
+    || container_exit=$?
 
   for suffix in _av1an_aom.mkv _av1an_svtav1.mkv _ab-av1.mkv; do
     outfile="${OUTPUT_DIR}/${stem}${suffix}"
