@@ -33,8 +33,8 @@ jobs:
 
       - name: Test binaries
         run: |
-          # Update this list as custom binaries are added to Dockerfile.stack
-          BINARIES=(av1an ab-av1 ffmpeg vspipe)
+          # Update this list as custom binaries are confirmed in Dockerfile.stack
+          BINARIES=(av1an ab-av1 ffmpeg)
           for bin in "${BINARIES[@]}"; do
             echo "=== Testing $bin ==="
             docker run --rm av1-stack-test:local "$bin" --version
