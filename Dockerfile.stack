@@ -202,6 +202,9 @@ COPY --from=build-ab-av1      /usr/local /usr/local
 # Set PYTHONPATH so getVSScriptAPI can import the vapoursynth module at runtime.
 ENV PYTHONPATH=/usr/local/lib/python3.10/site-packages
 
+RUN apt-get update && apt-get install -y --no-install-recommends mkvtoolnix \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN ldconfig && \
     mkdir -p /etc/vapoursynth && \
     echo "SystemPluginDir=/usr/local/lib/vapoursynth" > /etc/vapoursynth/vapoursynth.conf
