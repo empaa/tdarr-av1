@@ -140,7 +140,7 @@ COPY --from=build-ffmpeg      /usr/local /usr/local
 RUN ldconfig
 
 # Build l-smash library first — required by L-SMASH-Works
-RUN git clone --depth 1 https://github.com/l-smash/l-smash.git /src/l-smash && \
+RUN git clone --depth 1 --branch v2.14.5 https://github.com/l-smash/l-smash.git /src/l-smash && \
     cd /src/l-smash && \
     ./configure --prefix=/usr/local --enable-shared && \
     make -j$(nproc) && \
