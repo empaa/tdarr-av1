@@ -34,6 +34,7 @@ FROM base AS build-svtav1
 RUN git clone --depth 1 --branch v3.1.2 \
         https://gitlab.com/AOMediaCodec/SVT-AV1.git /src/svtav1 && \
     cmake -S /src/svtav1 -B /src/svtav1/build \
+        -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_INSTALL_PREFIX=/usr/local \
         -DBUILD_SHARED_LIBS=ON && \
@@ -47,6 +48,7 @@ FROM base AS build-libaom
 RUN git clone --depth 1 --branch v3.12.1 \
         https://aomedia.googlesource.com/aom /src/aom && \
     cmake -S /src/aom -B /src/aom_build \
+        -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_INSTALL_PREFIX=/usr/local \
         -DBUILD_SHARED_LIBS=ON && \
