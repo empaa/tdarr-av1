@@ -78,7 +78,7 @@ FROM base AS build-vapoursynth
 # Install Cython 3 via pip and force-override the system cython3 symlink so configure picks it up.
 RUN apt-get update && apt-get install -y python3-pip --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
-    && pip3 install cython \
+    && pip3 install --upgrade "cython>=3" \
     && ln -sf /usr/local/bin/cython /usr/bin/cython3
 
 # Build zimg 3.0.5 first — VapourSynth depends on it
