@@ -152,21 +152,11 @@ build_stack() {
 
 build_tdarr() {
   local platform="$1" arch="$2"
-  echo "==> Building av1-stack (${platform})..."
+  echo "==> Building tdarr + tdarr_node (${platform})..."
   ARCH="${arch}" PLATFORM="${platform}" \
     docker buildx bake \
     --builder "${BUILDER_NAME}" \
-    av1-stack
-  echo "==> Building tdarr (${platform})..."
-  ARCH="${arch}" PLATFORM="${platform}" \
-    docker buildx bake \
-    --builder "${BUILDER_NAME}" \
-    tdarr
-  echo "==> Building tdarr_node (${platform})..."
-  ARCH="${arch}" PLATFORM="${platform}" \
-    docker buildx bake \
-    --builder "${BUILDER_NAME}" \
-    tdarr_node
+    default
 }
 
 # ── tests ────────────────────────────────────────────────────────────────────
@@ -418,8 +408,6 @@ fi
 
 if [[ "$PUBLISH_ONLY" == false ]]; then
   ensure_builder
-  mkdir -p "${SCRIPT_DIR}/.buildcache/tdarr" \
-          "${SCRIPT_DIR}/.buildcache/tdarr_node"
   # Build and test
   for arch in "${ARCHES[@]}"; do
     platform="linux/${arch}"
