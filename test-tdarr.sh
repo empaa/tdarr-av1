@@ -98,8 +98,8 @@ run_startup_check() {
       sleep 1
     done
 
-    docker stop "$cid" > /dev/null
-    docker rm   "$cid" > /dev/null
+    docker stop "$cid" > /dev/null 2>&1 || true
+    docker rm   "$cid" > /dev/null 2>&1 || true
 
     printf "  %-20s" "startup (HTTP)"
     if [[ "$ok" == true ]]; then
@@ -143,7 +143,7 @@ run_encode_test() {
   local samples_dir="${SCRIPT_DIR}/test/samples"
   local output_dir="${SCRIPT_DIR}/test/output/${name}"
 
-  SAMPLE_FILES=()
+  local -a SAMPLE_FILES=()
   while IFS= read -r -d '' f; do
     SAMPLE_FILES+=("$f")
   done < <(find "$samples_dir" -maxdepth 1 -type f ! -name '.gitkeep' ! -name '.*' -print0)
