@@ -219,7 +219,7 @@ COPY --from=av1-stack /etc/vapoursynth /etc/vapoursynth
 ENV PYTHONPATH=/usr/local/lib/python3.12/site-packages
 RUN ldconfig && \
     apt-get update && \
-    apt-get install -y --no-install-recommends mkvtoolnix && \
+    apt-get install -y --no-install-recommends python3 libpython3.12 mkvtoolnix && \
     rm -rf /var/lib/apt/lists/*
 RUN ln -sf /usr/local/share/vmaf/vmaf_v0.6.1.json /vmaf_v0.6.1.json \
     && ln -sf /usr/local/share/vmaf/vmaf_4k_v0.6.1.json /vmaf_4k_v0.6.1.json
@@ -230,7 +230,7 @@ COPY --from=av1-stack /etc/vapoursynth /etc/vapoursynth
 ENV PYTHONPATH=/usr/local/lib/python3.12/site-packages
 RUN ldconfig && \
     apt-get update && \
-    apt-get install -y --no-install-recommends mkvtoolnix && \
+    apt-get install -y --no-install-recommends python3 libpython3.12 mkvtoolnix && \
     rm -rf /var/lib/apt/lists/*
 RUN ln -sf /usr/local/share/vmaf/vmaf_v0.6.1.json /vmaf_v0.6.1.json \
     && ln -sf /usr/local/share/vmaf/vmaf_4k_v0.6.1.json /vmaf_4k_v0.6.1.json
