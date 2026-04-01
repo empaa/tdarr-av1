@@ -61,13 +61,13 @@ docker buildx create --name multiplatform --driver docker-container --use
 
 ## Merge workflow
 
-1. Run `./test.sh` locally — must pass
+1. Run `./test.sh && ./test-tdarr.sh` locally — must pass
 2. Open PR from `dev` to `main`
 3. Merge
 
 ## Release workflow
 
-1. Run `./test.sh --release` locally — must pass (requires sample files in `test/samples/`)
+1. Run `./test.sh --release && ./test-tdarr.sh --release` locally — must pass (requires sample files in `test/samples/`)
 2. Merge `dev` → `main`
 3. Run `./publish.sh` — builds and pushes to GHCR (~45 min from Mac)
 
