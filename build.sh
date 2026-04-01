@@ -309,3 +309,153 @@ run_encode_test() {
 
   echo "done"
 }
+
+# ── publish ──────────────────────────────────────────────────────────────────
+
+check_local_images() {
+  local -a required=("$@")
+  local -a missing=()
+
+  for img in "${required[@]}"; do
+    if ! docker image inspect "$img" > /dev/null 2>&1; then
+      missing+=("$img")
+    fi
+  done
+
+  if [[ ${#missing[@]} -gt 0 ]]; then
+    echo "Missing test images: ${missing[*]}" >&2
+    echo "Run ./build.sh first to build and test them." >&2
+    return 1
+  fi
+}
+
+publish_images() {
+  local -a arches=("$@")
+
+  for target in tdarr tdarr_node; do
+    if [[ ${#arches[@]} -gt 1 ]]; then
+      for arch in "${arches[@]}"; do
+        echo "==> Pushing ${REGISTRY}/${target}:${arch}..."
+        docker tag "${target}:${arch}" "${REGISTRY}/${target}:${arch}"
+        docker push "${REGISTRY}/${target}:${arch}"
+      done
+      echo "==> Creating manifest ${REGISTRY}/${target}:latest..."
+      docker manifest create --amend "${REGISTRY}/${target}:latest" \
+        "${REGISTRY}/${target}:amd64" \
+        "${REGISTRY}/${target}:arm64"
+      docker manifest push "${REGISTRY}/${target}:latest"
+    else
+      local arch="${arches[0]}"
+      echo "==> Pushing ${REGISTRY}/${target}:latest..."
+      docker tag "${target}:${arch}" "${REGISTRY}/${target}:latest"
+      docker push "${REGISTRY}/${target}:latest"
+    fi
+  done
+}
+
+# ── clean ────────────────────────────────────────────────────────────────────
+
+do_clean() {
+  echo "==> Cleaning..."
+  for target in tdarr tdarr_node av1-stack; do
+    for arch in amd64 arm64; do
+      docker rmi "${target}:${arch}" 2>/dev/null || true
+    done
+  done
+  find "${SCRIPT_DIR}/test/output/stack" -mindepth 1 ! -name '.gitkeep' -delete 2>/dev/null || true
+  find "${SCRIPT_DIR}/test/output/tdarr" -mindepth 1 ! -name '.gitkeep' -delete 2>/dev/null || true
+  docker buildx stop "${BUILDER_NAME}" 2>/dev/null || true
+
+  if [[ "$CLEAN_CACHE" == true ]]; then
+    echo "==> Pruning buildx cache..."
+    docker buildx prune --builder "${BUILDER_NAME}" --force 2>/dev/null || true
+  fi
+
+  echo "Done."
+}
+
+# ── main ─────────────────────────────────────────────────────────────────────
+
+# Handle clean modes (standalone, exits early)
+if [[ "$CLEAN" == true || "$CLEAN_CACHE" == true ]]; then
+  do_clean
+  exit 0
+fi
+
+# Resolve target platforms
+if [[ "$ALL_PLATFORMS" == true ]]; then
+  ARCHES=(amd64 arm64)
+elif [[ -n "$SPECIFIC_ARCH" ]]; then
+  ARCHES=("$SPECIFIC_ARCH")
+else
+  ARCHES=("$(native_arch)")
+fi
+
+# Early GHCR auth check if publishing
+if [[ "$PUBLISH" == true ]]; then
+  check_ghcr_auth
+fi
+
+ensure_builder
+
+# Determine if this is a publish-only run (--publish with no test-triggering flags)
+PUBLISH_ONLY=false
+if [[ "$PUBLISH" == true && "$ENCODE" == false && "$STACK_ONLY" == false ]]; then
+  # Check if all required images already exist locally
+  local_images_exist=true
+  for arch in "${ARCHES[@]}"; do
+    for target in tdarr tdarr_node; do
+      if ! docker image inspect "${target}:${arch}" > /dev/null 2>&1; then
+        local_images_exist=false
+        break 2
+      fi
+    done
+  done
+  if [[ "$local_images_exist" == true ]]; then
+    PUBLISH_ONLY=true
+  fi
+fi
+
+if [[ "$PUBLISH_ONLY" == false ]]; then
+  # Build and test
+  for arch in "${ARCHES[@]}"; do
+    platform="linux/${arch}"
+
+    if [[ "$STACK_ONLY" == true ]]; then
+      build_stack "$platform" "$arch"
+      run_binary_checks "av1-stack:${arch}" "av1-stack" "$platform"
+      if [[ "$ENCODE" == true ]]; then
+        run_encode_test "av1-stack:${arch}" "${SCRIPT_DIR}/test/output/stack" "$platform"
+      fi
+    else
+      build_tdarr "$platform" "$arch"
+      run_binary_checks "tdarr:${arch}" "tdarr" "$platform"
+      run_binary_checks "tdarr_node:${arch}" "tdarr_node" "$platform"
+      run_startup_check "$platform" "$arch"
+      if [[ "$ENCODE" == true ]]; then
+        run_encode_test "tdarr:${arch}" "${SCRIPT_DIR}/test/output/tdarr" "$platform"
+      fi
+    fi
+  done
+
+  # Print summary and capture exit status
+  print_summary || {
+    exit 1
+  }
+fi
+
+# Publish if requested
+if [[ "$PUBLISH" == true ]]; then
+  declare -a required=()
+  for arch in "${ARCHES[@]}"; do
+    required+=("tdarr:${arch}" "tdarr_node:${arch}")
+  done
+  check_local_images "${required[@]}"
+
+  publish_images "${ARCHES[@]}"
+
+  echo ""
+  echo "Done. Images published:"
+  echo "  ${REGISTRY}/tdarr:latest"
+  echo "  ${REGISTRY}/tdarr_node:latest"
+fi
