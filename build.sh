@@ -138,3 +138,174 @@ print_summary() {
 
   return "$failed"
 }
+
+# ── build ────────────────────────────────────────────────────────────────────
+
+build_stack() {
+  local platform="$1" arch="$2"
+  echo "==> Building av1-stack (${platform})..."
+  docker buildx build \
+    --builder "${BUILDER_NAME}" \
+    --platform "${platform}" \
+    --target av1-stack \
+    --output "type=docker,name=av1-stack:${arch}" \
+    .
+}
+
+build_tdarr() {
+  local platform="$1" arch="$2"
+  echo "==> Building tdarr (${platform})..."
+  docker buildx build \
+    --builder "${BUILDER_NAME}" \
+    --platform "${platform}" \
+    --target tdarr \
+    --output "type=docker,name=tdarr:${arch}" \
+    .
+  echo "==> Building tdarr_node (${platform})..."
+  docker buildx build \
+    --builder "${BUILDER_NAME}" \
+    --platform "${platform}" \
+    --target tdarr_node \
+    --output "type=docker,name=tdarr_node:${arch}" \
+    .
+}
+
+# ── tests ────────────────────────────────────────────────────────────────────
+
+run_binary_checks() {
+  local image="$1" label="$2" platform="$3"
+
+  echo -n "Binary checks ${label} (${platform})... "
+  for bin in "${BINARIES[@]}"; do
+    local version_flag="--version"
+    [[ "$bin" == "ffmpeg" ]] && version_flag="-version"
+    if docker run --rm --entrypoint "" --platform "${platform}" "${image}" \
+        "$bin" $version_flag > /dev/null 2>&1; then
+      add_result "$platform" "${bin} (${label})" "OK"
+    else
+      add_result "$platform" "${bin} (${label})" "FAILED"
+    fi
+  done
+  echo "done"
+}
+
+run_startup_check() {
+  local platform="$1" arch="$2"
+  local net="tdarr-test-net-$$"
+  local server_cid="" node_cid="" state="" server_ok=false
+
+  echo -n "Startup check (${platform})... "
+
+  docker network create "$net" > /dev/null 2>&1 || true
+
+  if docker network inspect "$net" > /dev/null 2>&1; then
+    server_cid=$(docker run -d \
+      --network "$net" \
+      --name "tdarr-server-$$" \
+      --platform "${platform}" \
+      -e serverIP=0.0.0.0 \
+      -e serverPort=8266 \
+      -e webUIPort=8265 \
+      -e internalNode=false \
+      "tdarr:${arch}") || true
+  fi
+
+  if [[ -n "$server_cid" ]]; then
+    for _ in $(seq 1 30); do
+      if docker exec "$server_cid" curl -sf http://localhost:8265 > /dev/null 2>&1; then
+        server_ok=true
+        break
+      fi
+      sleep 1
+    done
+  fi
+
+  if [[ "$server_ok" == true ]]; then
+    node_cid=$(docker run -d \
+      --network "$net" \
+      --platform "${platform}" \
+      -e serverIP="tdarr-server-$$" \
+      -e serverPort=8266 \
+      -e nodeName=test-node \
+      "tdarr_node:${arch}") || true
+
+    if [[ -n "$node_cid" ]]; then
+      sleep 10
+      state=$(docker inspect --format '{{.State.Status}}' "$node_cid" 2>/dev/null || echo "missing")
+    fi
+  fi
+
+  # Cleanup
+  [[ -n "$node_cid"   ]] && { docker stop "$node_cid"   > /dev/null 2>&1 || true; docker rm "$node_cid"   > /dev/null 2>&1 || true; }
+  [[ -n "$server_cid" ]] && { docker stop "$server_cid" > /dev/null 2>&1 || true; docker rm "$server_cid" > /dev/null 2>&1 || true; }
+  docker rm -f "tdarr-server-$$" > /dev/null 2>&1 || true
+  docker network rm "$net" > /dev/null 2>&1 || true
+
+  if [[ "$server_ok" == true ]]; then
+    add_result "$platform" "tdarr server" "OK"
+  else
+    add_result "$platform" "tdarr server" "FAILED"
+  fi
+
+  if [[ "${state}" == "running" ]]; then
+    add_result "$platform" "tdarr_node alive" "OK"
+  else
+    add_result "$platform" "tdarr_node alive" "FAILED"
+  fi
+
+  echo "done"
+}
+
+run_encode_test() {
+  local image="$1" output_dir="$2" platform="$3"
+  local samples_dir="${SCRIPT_DIR}/test/samples"
+
+  local -a SAMPLE_FILES=()
+  while IFS= read -r -d '' f; do
+    SAMPLE_FILES+=("$f")
+  done < <(find "$samples_dir" -maxdepth 1 -type f ! -name '.gitkeep' ! -name '.*' -print0)
+
+  if [[ ${#SAMPLE_FILES[@]} -eq 0 ]]; then
+    echo "WARNING: No sample files in test/samples/ — skipping encode tests"
+    return 0
+  fi
+
+  echo -n "Encode tests (${platform}, ${#SAMPLE_FILES[@]} sample(s))... "
+
+  for sample in "${SAMPLE_FILES[@]}"; do
+    local filename stem
+    filename="$(basename "$sample")"
+    stem="${filename%.*}"
+
+    local container_exit=0
+    docker run --rm --entrypoint "" \
+      --platform "${platform}" \
+      -v "${samples_dir}:/samples:ro" \
+      -v "${output_dir}:/output" \
+      "${image}" bash -c '
+        set -e
+        ffmpeg -y -ss 00:01:00 -t 60 -i "/samples/$1" -c copy "/output/$2_clip.mkv" 2>/dev/null
+        av1an -i "/output/$2_clip.mkv" --encoder aom --target-quality 90 --verbose \
+          -o "/output/$2_av1an_aom.mkv"
+        av1an -i "/output/$2_clip.mkv" --encoder svt-av1 --target-quality 90 --verbose \
+          -o "/output/$2_av1an_svtav1.mkv"
+        ab-av1 auto-encode -i "/output/$2_clip.mkv" --min-vmaf 90 \
+          -o "/output/$2_ab-av1.mkv"
+      ' -- "$filename" "$stem" \
+      || container_exit=$?
+
+    for suffix in _av1an_aom.mkv _av1an_svtav1.mkv _ab-av1.mkv; do
+      local outfile="${output_dir}/${stem}${suffix}"
+      local label="encode ${stem}${suffix}"
+      if [[ $container_exit -ne 0 ]]; then
+        add_result "$platform" "$label" "FAILED"
+      elif [[ -f "$outfile" ]] && [[ -s "$outfile" ]]; then
+        add_result "$platform" "$label" "OK"
+      else
+        add_result "$platform" "$label" "FAILED"
+      fi
+    done
+  done
+
+  echo "done"
+}
