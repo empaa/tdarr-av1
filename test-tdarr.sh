@@ -78,28 +78,27 @@ run_startup_check() {
   echo ""
   echo "Running startup check for ${name}..."
 
-  local cid
-
   if [[ "$name" == "tdarr" ]]; then
+    local cid="" ok=false
     cid=$(docker run -d \
       -p 8265:8265 \
       -e serverIP=0.0.0.0 \
       -e serverPort=8266 \
       -e webUIPort=8265 \
       -e internalNode=false \
-      "${image}")
+      "${image}") || true
 
-    local ok=false
-    for i in $(seq 1 30); do
-      if curl -sf http://localhost:8265 > /dev/null 2>&1; then
-        ok=true
-        break
-      fi
-      sleep 1
-    done
+    if [[ -n "$cid" ]]; then
+      for i in $(seq 1 30); do
+        if curl -sf http://localhost:8265 > /dev/null 2>&1; then
+          ok=true
+          break
+        fi
+        sleep 1
+      done
+    fi
 
-    docker stop "$cid" > /dev/null 2>&1 || true
-    docker rm   "$cid" > /dev/null 2>&1 || true
+    [[ -n "$cid" ]] && { docker stop "$cid" > /dev/null 2>&1 || true; docker rm "$cid" > /dev/null 2>&1 || true; }
 
     printf "  %-20s" "startup (HTTP)"
     if [[ "$ok" == true ]]; then
@@ -161,6 +160,7 @@ run_startup_check() {
     # Unconditional cleanup — runs regardless of how we got here.
     [[ -n "$node_cid"   ]] && { docker stop "$node_cid"   > /dev/null 2>&1 || true; docker rm "$node_cid"   > /dev/null 2>&1 || true; }
     [[ -n "$server_cid" ]] && { docker stop "$server_cid" > /dev/null 2>&1 || true; docker rm "$server_cid" > /dev/null 2>&1 || true; }
+    docker rm -f "tdarr-server-$$" > /dev/null 2>&1 || true
     docker network rm "$net" > /dev/null 2>&1 || true
 
     printf "  %-20s" "startup (alive)"
