@@ -418,8 +418,7 @@ fi
 
 if [[ "$PUBLISH_ONLY" == false ]]; then
   ensure_builder
-  mkdir -p "${SCRIPT_DIR}/.buildcache/av1-stack" \
-          "${SCRIPT_DIR}/.buildcache/tdarr" \
+  mkdir -p "${SCRIPT_DIR}/.buildcache/tdarr" \
           "${SCRIPT_DIR}/.buildcache/tdarr_node"
   # Build and test
   for arch in "${ARCHES[@]}"; do
