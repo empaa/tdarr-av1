@@ -2,42 +2,41 @@
 set -euo pipefail
 
 REGISTRY="ghcr.io/empaa"
+ALL_PLATFORMS=false
 
-# Quick pre-check: fails if ghcr.io has never been configured locally.
-# Does NOT verify token validity — if the push fails mid-build, re-run docker login.
-if ! grep -q "ghcr.io" "${HOME}/.docker/config.json" 2>/dev/null; then
-    echo "Error: ghcr.io not found in ~/.docker/config.json."
-    echo "Run: echo <TOKEN> | docker login ghcr.io -u <YOUR_USERNAME> --password-stdin"
-    echo "See docs/build-and-publish.md for instructions."
-    exit 1
+for arg in "$@"; do
+  case "$arg" in
+    --all-platforms) ALL_PLATFORMS=true ;;
+    *) echo "Unknown argument: $arg" >&2; exit 1 ;;
+  esac
+done
+
+if [[ "$ALL_PLATFORMS" == true ]]; then
+  PLATFORM_ARGS=(--platform linux/amd64,linux/arm64)
+  PLATFORM_LABEL="linux/amd64 + linux/arm64"
+else
+  case "$(uname -m)" in
+    x86_64)        NATIVE="linux/amd64" ;;
+    aarch64|arm64) NATIVE="linux/arm64" ;;
+    *) echo "Unsupported architecture: $(uname -m)" >&2; exit 1 ;;
+  esac
+  PLATFORM_ARGS=(--platform "${NATIVE}")
+  PLATFORM_LABEL="${NATIVE}"
 fi
 
-echo "==> Building and pushing av1-stack (linux/amd64 + linux/arm64, ~45 min)..."
-docker buildx build \
-    --platform linux/amd64,linux/arm64 \
-    --target final \
-    -f Dockerfile.stack \
-    -t "${REGISTRY}/av1-stack:latest" \
-    --push \
-    .
+echo "==> Publishing to ${REGISTRY} (${PLATFORM_LABEL})..."
 
-echo "==> Building and pushing tdarr images (linux/amd64 + linux/arm64)..."
-docker buildx build \
-    --platform linux/amd64,linux/arm64 \
-    -f Dockerfile.tdarr \
-    -t "${REGISTRY}/tdarr:latest" \
+for target in tdarr tdarr_node; do
+  echo "==> Building and pushing ${target}..."
+  docker buildx build \
+    "${PLATFORM_ARGS[@]}" \
+    --target "${target}" \
     --push \
+    -t "${REGISTRY}/${target}:latest" \
     .
-
-docker buildx build \
-    --platform linux/amd64,linux/arm64 \
-    -f Dockerfile.tdarr_node \
-    -t "${REGISTRY}/tdarr_node:latest" \
-    --push \
-    .
+done
 
 echo ""
-echo "Done. Published:"
-echo "  ${REGISTRY}/av1-stack:latest"
+echo "Done. Images published:"
 echo "  ${REGISTRY}/tdarr:latest"
 echo "  ${REGISTRY}/tdarr_node:latest"

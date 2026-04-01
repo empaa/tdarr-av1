@@ -1,9 +1,0 @@
-FROM ghcr.io/haveagitgat/tdarr:latest
-
-COPY --from=ghcr.io/empaa/av1-stack:latest /usr/local /usr/local
-COPY --from=ghcr.io/empaa/av1-stack:latest /etc/vapoursynth /etc/vapoursynth
-
-RUN ldconfig && \
-    apt-get update && \
-    apt-get install -y mkvtoolnix && \
-    rm -rf /var/lib/apt/lists/*

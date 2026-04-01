@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# Blocks commits that contain:
+#   - files over 10 MB
+#   - anything under test/output/ or test/samples/ (copyright risk)
+#
+# Install: cp hooks/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+
+LIMIT_MB=10
+LIMIT_BYTES=$((LIMIT_MB * 1024 * 1024))
+failed=0
+
+while IFS= read -r -d '' file; do
+  # Block test/output/ and test/samples/ content (copyright — derived from sample media)
+  if [[ "$file" == test/output/* || "$file" == test/samples/* ]]; then
+    if [[ "$file" != */.gitkeep ]]; then
+      echo "BLOCKED: ${file} (test/output and test/samples must not be committed)"
+      failed=$((failed + 1))
+      continue
+    fi
+  fi
+
+  # Block files over 10 MB
+  size=$(git cat-file -s ":${file}" 2>/dev/null) || continue
+  if [[ "$size" -gt "$LIMIT_BYTES" ]]; then
+    echo "BLOCKED: ${file} is $(( size / 1024 / 1024 ))MB (limit: ${LIMIT_MB}MB)"
+    failed=$((failed + 1))
+  fi
+done < <(git diff --cached --name-only -z)
+
+if [[ $failed -gt 0 ]]; then
+  echo ""
+  echo "Remove blocked file(s) from the index with: git reset HEAD <file>"
+  exit 1
+fi

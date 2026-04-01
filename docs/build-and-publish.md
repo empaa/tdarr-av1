@@ -6,41 +6,34 @@ Read this before any build, test, or GHCR publish work.
 
 ## Local test
 
-**Pre-merge** — builds both platforms, runs binary version checks:
+**Pre-merge** — builds from source, runs binary version checks (native arch):
 ```bash
-./test.sh
+./test-stack.sh && ./test-tdarr.sh
 ```
 
-**Pre-release** — binary checks (native platform only) + real encode tests against `test/samples/`:
+**Pre-release** — binary checks + real encode tests against `test/samples/`:
 ```bash
-./test.sh --release
+./test-stack.sh --encode && ./test-tdarr.sh --encode
 ```
 
-Place sample video files (≥2 min long) in `test/samples/` before running. Outputs land in `test/output/` for inspection.
+Place sample video files (≥2 min long) in `test/samples/` before running.
+Outputs land in `test/output/stack/` and `test/output/tdarr/` for inspection.
+
+**Both platforms:**
+```bash
+./test-stack.sh --all-platforms && ./test-tdarr.sh --all-platforms
+```
 
 **Cache management:**
 ```bash
-./test.sh --clean                 # remove cached images + wipe test/output/
-./test.sh --release --clean       # clean then do a full release test run
-```
-
-## Local builds (manual)
-
-**Fast path** — reuses published av1-stack, only rebuilds Tdarr images (~5 min):
-```bash
-./build.sh
-```
-
-**Full rebuild** — recompiles entire AV1 stack from source (~45 min):
-```bash
-./build.sh --build-stack
+./test-stack.sh --clean
+./test-tdarr.sh --clean
 ```
 
 ## Publish to GHCR
 
-Builds multi-platform images (linux/amd64 + linux/arm64) and pushes them to GHCR.
-Run this from the M1 Mac — arm64 compiles natively, amd64 via Rosetta/QEMU (reliable).
-On Intel/AMD Linux, arm64 still uses QEMU and may segfault on the SVT-AV1 compile.
+Builds and pushes `tdarr` and `tdarr_node` to GHCR. The `av1-stack` stage is
+compiled as part of the build but not published.
 
 **One-time setup per machine:**
 
@@ -54,23 +47,32 @@ echo <TOKEN> | docker login ghcr.io -u <your-github-username> --password-stdin
 docker buildx create --name multiplatform --driver docker-container --use
 ```
 
-**Publish:**
+**Publish (native arch only):**
 ```bash
 ./publish.sh
 ```
 
+**Publish (both platforms — run from M1 Mac for best results):**
+```bash
+./publish.sh --all-platforms
+```
+
+On M1 Mac: arm64 compiles natively, amd64 via Rosetta/QEMU (reliable).
+On Intel/AMD Linux: arm64 uses QEMU and may segfault on the SVT-AV1 compile.
+
 ## Merge workflow
 
-1. Run `./test.sh` locally — must pass
+1. Run `./test-stack.sh && ./test-tdarr.sh` locally — must pass
 2. Open PR from `dev` to `main`
 3. Merge
 
 ## Release workflow
 
-1. Run `./test.sh --release` locally — must pass (requires sample files in `test/samples/`)
+1. Run `./test-stack.sh --encode && ./test-tdarr.sh --encode` locally — must pass (requires sample files in `test/samples/`)
 2. Merge `dev` → `main`
-3. Run `./publish.sh` — builds and pushes to GHCR (~45 min from Mac)
+3. Run `./publish.sh --all-platforms` — builds and pushes to GHCR (~45 min from Mac)
 
 ## Binary list
 
-`test.sh` checks these binaries on both platforms. Current: `av1an`, `ab-av1`, `ffmpeg`. Update when new binaries are confirmed in `Dockerfile.stack`.
+`test-stack.sh` and `test-tdarr.sh` check these binaries: `av1an`, `ab-av1`, `ffmpeg`.
+Update when new binaries are added to `Dockerfile`.

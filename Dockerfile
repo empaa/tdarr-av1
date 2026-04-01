@@ -1,6 +1,4 @@
-# syntax=docker/dockerfile:1
-
-FROM ubuntu:22.04 AS base
+FROM ubuntu:24.04 AS base
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
@@ -23,7 +21,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     libssl-dev \
     xxd \
-    && ln -sf /usr/bin/cython3 /usr/bin/cython \
+    && (ln -sf /usr/bin/cython3 /usr/bin/cython || true) \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Rust stable
@@ -46,8 +44,6 @@ RUN git clone --depth 1 --branch v4.1.0 \
 
 FROM base AS build-libaom
 
-# Use official tarball from storage.googleapis.com (stable release channel).
-# aomedia.googlesource.com can be slow or unavailable during builds.
 RUN wget -q "https://storage.googleapis.com/aom-releases/libaom-3.13.2.tar.gz" \
         -O /tmp/libaom.tar.gz && \
     mkdir -p /src/aom && \
@@ -80,11 +76,11 @@ RUN git clone --depth 1 --branch v3.0.0 \
 
 FROM base AS build-vapoursynth
 
-# Ubuntu 22.04 ships Cython 0.29.x; VapourSynth R73 requires Cython 3 (noexcept nogil syntax).
-# Install Cython 3 via pip and force-override the system cython3 symlink so configure picks it up.
+# Ubuntu 24.04 ships Python 3.12. VapourSynth R73 requires Cython 3.
+# --break-system-packages required on Ubuntu 24.04 (PEP 668).
 RUN apt-get update && apt-get install -y python3-pip --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
-    && pip3 install --upgrade "cython>=3" \
+    && pip3 install --break-system-packages --upgrade "cython>=3" \
     && ln -sf /usr/local/bin/cython /usr/bin/cython3
 
 # Build zimg 3.0.6 first — VapourSynth depends on it
@@ -143,7 +139,6 @@ RUN ldconfig
 RUN apt-get update && apt-get install -y --no-install-recommends libxxhash-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Build l-smash library first — required by L-SMASH-Works
 RUN git clone --depth 1 --branch v2.14.5 https://github.com/l-smash/l-smash.git /src/l-smash && \
     cd /src/l-smash && \
     ./configure --prefix=/usr/local --enable-shared && \
@@ -188,7 +183,7 @@ FROM base AS build-ab-av1
 
 RUN cargo install ab-av1 --version 0.11.2 --root /usr/local
 
-FROM base AS final
+FROM ubuntu:24.04 AS av1-stack
 
 COPY --from=build-svtav1      /usr/local /usr/local
 COPY --from=build-libaom      /usr/local /usr/local
@@ -199,11 +194,14 @@ COPY --from=build-lsmash      /usr/local /usr/local
 COPY --from=build-av1an       /usr/local /usr/local
 COPY --from=build-ab-av1      /usr/local /usr/local
 
-# Ubuntu 22.04 Python uses dist-packages; VapourSynth installs to site-packages.
+# Ubuntu 24.04 Python uses dist-packages; VapourSynth installs to site-packages.
 # Set PYTHONPATH so getVSScriptAPI can import the vapoursynth module at runtime.
-ENV PYTHONPATH=/usr/local/lib/python3.10/site-packages
+ENV PYTHONPATH=/usr/local/lib/python3.12/site-packages
 
-RUN apt-get update && apt-get install -y --no-install-recommends mkvtoolnix \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 \
+    libpython3.12 \
+    mkvtoolnix \
     && rm -rf /var/lib/apt/lists/*
 
 RUN ldconfig && \
@@ -212,5 +210,27 @@ RUN ldconfig && \
 
 # av1an defaults to looking for vmaf_v0.6.1.json relative to CWD (/). Symlink
 # to the installed model so the default path resolves without --vmaf-path.
+RUN ln -sf /usr/local/share/vmaf/vmaf_v0.6.1.json /vmaf_v0.6.1.json \
+    && ln -sf /usr/local/share/vmaf/vmaf_4k_v0.6.1.json /vmaf_4k_v0.6.1.json
+
+FROM ghcr.io/haveagitgat/tdarr:latest AS tdarr
+COPY --from=av1-stack /usr/local /usr/local
+COPY --from=av1-stack /etc/vapoursynth /etc/vapoursynth
+ENV PYTHONPATH=/usr/local/lib/python3.12/site-packages
+RUN ldconfig && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends python3 libpython3.12 mkvtoolnix && \
+    rm -rf /var/lib/apt/lists/*
+RUN ln -sf /usr/local/share/vmaf/vmaf_v0.6.1.json /vmaf_v0.6.1.json \
+    && ln -sf /usr/local/share/vmaf/vmaf_4k_v0.6.1.json /vmaf_4k_v0.6.1.json
+
+FROM ghcr.io/haveagitgat/tdarr_node:latest AS tdarr_node
+COPY --from=av1-stack /usr/local /usr/local
+COPY --from=av1-stack /etc/vapoursynth /etc/vapoursynth
+ENV PYTHONPATH=/usr/local/lib/python3.12/site-packages
+RUN ldconfig && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends python3 libpython3.12 mkvtoolnix && \
+    rm -rf /var/lib/apt/lists/*
 RUN ln -sf /usr/local/share/vmaf/vmaf_v0.6.1.json /vmaf_v0.6.1.json \
     && ln -sf /usr/local/share/vmaf/vmaf_4k_v0.6.1.json /vmaf_4k_v0.6.1.json

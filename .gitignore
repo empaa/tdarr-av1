@@ -4,4 +4,6 @@ old_resources
 test/samples/*
 !test/samples/.gitkeep
 test/output/*
-!test/output/.gitkeep
+!test/output/*/
+test/output/*/*
+!test/output/*/.gitkeep

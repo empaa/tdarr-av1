@@ -8,14 +8,14 @@ This file is populated as decisions are made during development. Each entry reco
 
 ## Tdarr Base OS
 
-**Constraint:** `Dockerfile.stack` base stage must use exactly this Ubuntu version.
+**Constraint:** The `base` stage in `Dockerfile` must use exactly this Ubuntu version.
 
 **Why:** Compiled `.so` files reference glibc symbols from the OS they are built on.
 If the build OS is newer than Tdarr's runtime OS, `dlopen` fails with symbol-not-found
 errors at runtime.
 
-**Tdarr image base:** Ubuntu 22.04 (Jammy)
-**tdarr_node image base:** Ubuntu 22.04 (Jammy)
+**Tdarr image base:** Ubuntu 24.04 (Noble)
+**tdarr_node image base:** Ubuntu 24.04 (Noble)
 
 ---
 
