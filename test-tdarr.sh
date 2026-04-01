@@ -111,23 +111,58 @@ run_startup_check() {
     fi
 
   else
-    # tdarr_node has no HTTP server; start it with a dummy server address
-    # and verify it stays alive for 10 seconds (not a missing-binary crash).
-    cid=$(docker run -d \
-      -e serverIP=127.0.0.1 \
+    # tdarr_node needs a live server to connect to.
+    # Start a tdarr server on a private bridge network, then start the node on the same
+    # network. The node stays running if it can connect; check after 15 seconds.
+    local net="tdarr-test-net-$$"
+    local server_cid node_cid server_image
+    server_image="tdarr-test:${arch}"
+
+    docker network create "$net" > /dev/null
+
+    server_cid=$(docker run -d \
+      --network "$net" \
+      --name "tdarr-server-$$" \
+      -e serverIP=0.0.0.0 \
       -e serverPort=8266 \
-      -e nodeName=test-node \
-      "${image}")
+      -e webUIPort=8265 \
+      -e internalNode=false \
+      "${server_image}")
 
-    sleep 10
-    local state
-    state=$(docker inspect --format '{{.State.Status}}' "$cid" 2>/dev/null || echo "missing")
+    # Wait up to 20s for the server to be ready (poll its HTTP port via the bridge network)
+    local server_ok=false
+    for i in $(seq 1 20); do
+      if docker exec "$server_cid" curl -sf http://localhost:8265 > /dev/null 2>&1; then
+        server_ok=true
+        break
+      fi
+      sleep 1
+    done
 
-    docker stop "$cid" > /dev/null 2>&1 || true
-    docker rm   "$cid" > /dev/null 2>&1 || true
+    local state="unknown"
+    if [[ "$server_ok" == true ]]; then
+      node_cid=$(docker run -d \
+        --network "$net" \
+        -e serverIP="tdarr-server-$$" \
+        -e serverPort=8266 \
+        -e nodeName=test-node \
+        "${image}")
+
+      sleep 10
+      state=$(docker inspect --format '{{.State.Status}}' "$node_cid" 2>/dev/null || echo "missing")
+      docker stop "$node_cid" > /dev/null 2>&1 || true
+      docker rm   "$node_cid" > /dev/null 2>&1 || true
+    fi
+
+    docker stop "$server_cid" > /dev/null 2>&1 || true
+    docker rm   "$server_cid" > /dev/null 2>&1 || true
+    docker network rm "$net" > /dev/null 2>&1 || true
 
     printf "  %-20s" "startup (alive)"
-    if [[ "$state" == "running" ]]; then
+    if [[ "$server_ok" != true ]]; then
+      echo "FAILED (server did not start)"
+      return 1
+    elif [[ "$state" == "running" ]]; then
       echo "OK"
       return 0
     else

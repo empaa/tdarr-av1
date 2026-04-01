@@ -8,15 +8,15 @@ Read this before any build, test, or GHCR publish work.
 
 **Pre-merge** — builds both platforms, runs binary version checks:
 ```bash
-./test.sh
+./test.sh && ./test-tdarr.sh
 ```
 
 **Pre-release** — binary checks (native platform only) + real encode tests against `test/samples/`:
 ```bash
-./test.sh --release
+./test.sh --release && ./test-tdarr.sh --release
 ```
 
-Place sample video files (≥2 min long) in `test/samples/` before running. Outputs land in `test/output/` for inspection.
+Place sample video files (≥2 min long) in `test/samples/` before running. Outputs land in `test/output/stack/` (av1-stack), `test/output/tdarr/`, and `test/output/tdarr_node/` for inspection.
 
 **Cache management:**
 ```bash
