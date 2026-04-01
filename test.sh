@@ -76,8 +76,8 @@ if [[ "$CLEAN" == true ]]; then
   echo "==> Cleaning cached images..."
   docker rmi av1-stack-test:amd64 2>/dev/null || true
   docker rmi av1-stack-test:arm64 2>/dev/null || true
-  echo "==> Cleaning test/output/..."
-  find "${SCRIPT_DIR}/test/output" -mindepth 1 ! -name '.gitkeep' -delete
+  echo "==> Cleaning test/output/stack/..."
+  find "${SCRIPT_DIR}/test/output/stack" -mindepth 1 ! -name '.gitkeep' -delete
   echo "Clean complete."
   [[ "$RELEASE" == false ]] && exit 0
 fi
@@ -104,7 +104,7 @@ fi
 # ── Phase 2: encode tests (--release only) ────────────────────────────────────
 
 SAMPLES_DIR="${SCRIPT_DIR}/test/samples"
-OUTPUT_DIR="${SCRIPT_DIR}/test/output"
+OUTPUT_DIR="${SCRIPT_DIR}/test/output/stack"
 IMAGE="av1-stack-test:${ARCH}"
 
 SAMPLE_FILES=()
