@@ -144,30 +144,19 @@ print_summary() {
 build_stack() {
   local platform="$1" arch="$2"
   echo "==> Building av1-stack (${platform})..."
-  docker buildx build \
+  ARCH="${arch}" PLATFORM="${platform}" \
+    docker buildx bake \
     --builder "${BUILDER_NAME}" \
-    --platform "${platform}" \
-    --target av1-stack \
-    --output "type=docker,name=av1-stack:${arch}" \
-    .
+    stack-only
 }
 
 build_tdarr() {
   local platform="$1" arch="$2"
-  echo "==> Building tdarr (${platform})..."
-  docker buildx build \
+  echo "==> Building tdarr + tdarr_node (${platform})..."
+  ARCH="${arch}" PLATFORM="${platform}" \
+    docker buildx bake \
     --builder "${BUILDER_NAME}" \
-    --platform "${platform}" \
-    --target tdarr \
-    --output "type=docker,name=tdarr:${arch}" \
-    .
-  echo "==> Building tdarr_node (${platform})..."
-  docker buildx build \
-    --builder "${BUILDER_NAME}" \
-    --platform "${platform}" \
-    --target tdarr_node \
-    --output "type=docker,name=tdarr_node:${arch}" \
-    .
+    default
 }
 
 # ── tests ────────────────────────────────────────────────────────────────────
@@ -356,7 +345,7 @@ publish_images() {
 # ── clean ────────────────────────────────────────────────────────────────────
 
 do_clean() {
-  echo "==> Cleaning..."
+  echo "==> Cleaning local images and test output..."
   for target in tdarr tdarr_node av1-stack; do
     for arch in amd64 arm64; do
       docker rmi "${target}:${arch}" 2>/dev/null || true
@@ -364,10 +353,12 @@ do_clean() {
   done
   find "${SCRIPT_DIR}/test/output/stack" -mindepth 1 ! -name '.gitkeep' -delete 2>/dev/null || true
   find "${SCRIPT_DIR}/test/output/tdarr" -mindepth 1 ! -name '.gitkeep' -delete 2>/dev/null || true
-  docker buildx stop "${BUILDER_NAME}" 2>/dev/null || true
 
   if [[ "$CLEAN_CACHE" == true ]]; then
-    echo "==> Pruning buildx cache..."
+    echo "==> Removing local build cache..."
+    rm -rf "${SCRIPT_DIR}/.buildcache"
+    echo "==> Stopping builder and pruning buildx cache..."
+    docker buildx stop "${BUILDER_NAME}" 2>/dev/null || true
     docker buildx prune --builder "${BUILDER_NAME}" --force 2>/dev/null || true
   fi
 

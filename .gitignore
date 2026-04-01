@@ -1,6 +1,7 @@
 .DS_Store
 old_resources
 .worktrees
+.buildcache
 test/samples/*
 !test/samples/.gitkeep
 test/output/*
