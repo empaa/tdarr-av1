@@ -396,11 +396,10 @@ if [[ "$PUBLISH" == true ]]; then
   check_ghcr_auth
 fi
 
-ensure_builder
-
-# Determine if this is a publish-only run (--publish with no test-triggering flags)
+# Determine if this is a publish-only run (--publish with no build-triggering flags)
 PUBLISH_ONLY=false
-if [[ "$PUBLISH" == true && "$ENCODE" == false && "$STACK_ONLY" == false ]]; then
+if [[ "$PUBLISH" == true && "$ENCODE" == false && "$STACK_ONLY" == false \
+      && "$ALL_PLATFORMS" == false && -z "$SPECIFIC_ARCH" ]]; then
   # Check if all required images already exist locally
   local_images_exist=true
   for arch in "${ARCHES[@]}"; do
@@ -417,6 +416,7 @@ if [[ "$PUBLISH" == true && "$ENCODE" == false && "$STACK_ONLY" == false ]]; the
 fi
 
 if [[ "$PUBLISH_ONLY" == false ]]; then
+  ensure_builder
   # Build and test
   for arch in "${ARCHES[@]}"; do
     platform="linux/${arch}"
