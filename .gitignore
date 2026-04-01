@@ -3,5 +3,5 @@ old_resources
 .worktrees
 test/samples/*
 !test/samples/.gitkeep
-test/output/*
-!test/output/.gitkeep
+test/output/*/*
+!test/output/*/.gitkeep
