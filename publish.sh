@@ -2,6 +2,7 @@
 set -euo pipefail
 
 REGISTRY="ghcr.io/empaa"
+BUILDER_NAME="multiplatform"
 ALL_PLATFORMS=false
 
 for arg in "$@"; do
@@ -24,11 +25,40 @@ else
   PLATFORM_LABEL="${NATIVE}"
 fi
 
+ensure_builder() {
+  if ! docker buildx inspect "${BUILDER_NAME}" > /dev/null 2>&1; then
+    echo "==> Creating buildx builder '${BUILDER_NAME}'..."
+    docker buildx create --name "${BUILDER_NAME}" --driver docker-container
+  fi
+}
+
+check_ghcr_auth() {
+  local auth
+  auth=$(python3 -c "
+import json, os
+try:
+    cfg = json.load(open(os.path.expanduser('~/.docker/config.json')))
+    a = cfg.get('auths', {}).get('ghcr.io', {})
+    print('ok' if a.get('auth') else 'missing')
+except Exception:
+    print('missing')
+" 2>/dev/null)
+  if [[ "$auth" != "ok" ]]; then
+    echo "Not authenticated to ghcr.io. Run:" >&2
+    echo "  gh auth token | docker login ghcr.io -u <github-username> --password-stdin" >&2
+    exit 1
+  fi
+}
+
+ensure_builder
+check_ghcr_auth
+
 echo "==> Publishing to ${REGISTRY} (${PLATFORM_LABEL})..."
 
 for target in tdarr tdarr_node; do
   echo "==> Building and pushing ${target}..."
   docker buildx build \
+    --builder "${BUILDER_NAME}" \
     "${PLATFORM_ARGS[@]}" \
     --target "${target}" \
     --push \

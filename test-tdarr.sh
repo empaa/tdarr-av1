@@ -5,6 +5,7 @@ BINARIES=(av1an ab-av1 ffmpeg)
 ENCODE=false
 ALL_PLATFORMS=false
 CLEAN=false
+BUILDER_NAME="multiplatform"
 
 for arg in "$@"; do
   case "$arg" in
@@ -31,16 +32,25 @@ build_images() {
   local platform="$1" arch="$2"
   echo "==> Building tdarr (${platform})..."
   docker buildx build \
+    --builder "${BUILDER_NAME}" \
     --platform "${platform}" \
     --target tdarr \
     --output "type=docker,name=tdarr:${arch}" \
     .
   echo "==> Building tdarr_node (${platform})..."
   docker buildx build \
+    --builder "${BUILDER_NAME}" \
     --platform "${platform}" \
     --target tdarr_node \
     --output "type=docker,name=tdarr_node:${arch}" \
     .
+}
+
+ensure_builder() {
+  if ! docker buildx inspect "${BUILDER_NAME}" > /dev/null 2>&1; then
+    echo "==> Creating buildx builder '${BUILDER_NAME}'..."
+    docker buildx create --name "${BUILDER_NAME}" --driver docker-container
+  fi
 }
 
 run_binary_checks() {
@@ -226,6 +236,7 @@ if [[ "$CLEAN" == true ]]; then
   docker rmi tdarr_node:arm64 2>/dev/null || true
   find "${SCRIPT_DIR}/test/output/tdarr"      -mindepth 1 ! -name '.gitkeep' -delete
   find "${SCRIPT_DIR}/test/output/tdarr_node" -mindepth 1 ! -name '.gitkeep' -delete
+  docker buildx stop "${BUILDER_NAME}" 2>/dev/null || true
   echo "Done."
   exit 0
 fi
@@ -240,6 +251,8 @@ else
   ARCH=$(native_arch)
   PLATFORMS=("linux/${ARCH}")
 fi
+
+ensure_builder
 
 for platform in "${PLATFORMS[@]}"; do
   arch="${platform#linux/}"
