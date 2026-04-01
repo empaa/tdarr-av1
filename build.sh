@@ -14,14 +14,16 @@ CLEAN=false
 CLEAN_CACHE=false
 ALL_PLATFORMS=false
 SPECIFIC_ARCH=""
+ARCH_COUNT=0
 
+# shellcheck disable=SC2034  # SPECIFIC_ARCH, ARCH_COUNT used by later tasks
 for arg in "$@"; do
   case "$arg" in
     --stack-only)    STACK_ONLY=true ;;
     --encode)        ENCODE=true ;;
     --all-platforms) ALL_PLATFORMS=true ;;
-    --arm64)         SPECIFIC_ARCH="arm64" ;;
-    --amd64)         SPECIFIC_ARCH="amd64" ;;
+    --arm64)         SPECIFIC_ARCH="arm64"; ARCH_COUNT=$((ARCH_COUNT + 1)) ;;
+    --amd64)         SPECIFIC_ARCH="amd64"; ARCH_COUNT=$((ARCH_COUNT + 1)) ;;
     --publish)       PUBLISH=true ;;
     --clean)         CLEAN=true ;;
     --clean-cache)   CLEAN_CACHE=true ;;
@@ -36,7 +38,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 platform_count=0
 [[ "$ALL_PLATFORMS" == true ]] && platform_count=$((platform_count + 1))
-[[ -n "$SPECIFIC_ARCH" ]] && platform_count=$((platform_count + 1))
+platform_count=$((platform_count + ARCH_COUNT))
 if [[ $platform_count -gt 1 ]]; then
   echo "Error: --all-platforms, --arm64, and --amd64 are mutually exclusive" >&2
   exit 1
