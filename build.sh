@@ -152,6 +152,11 @@ build_stack() {
 
 build_tdarr() {
   local platform="$1" arch="$2"
+  echo "==> Building av1-stack (${platform})..."
+  ARCH="${arch}" PLATFORM="${platform}" \
+    docker buildx bake \
+    --builder "${BUILDER_NAME}" \
+    av1-stack
   echo "==> Building tdarr (${platform})..."
   ARCH="${arch}" PLATFORM="${platform}" \
     docker buildx bake \
