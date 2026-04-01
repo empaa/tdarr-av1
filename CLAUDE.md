@@ -17,6 +17,14 @@ The goal is deployable images usable directly with `docker run`, with av1an and 
 - **Image structure, stack layout, plugin integration** → read `docs/architecture.md` first
 - **Building locally or publishing to GHCR** → read `docs/build-and-publish.md` first
 
+## Git hooks
+
+A pre-commit hook that blocks files over 10 MB lives in `hooks/pre-commit`. Install it once per clone:
+
+```bash
+cp hooks/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+```
+
 ## Memory
 
 User feedback and preferences are tracked in the memory system and should inform all suggestions. Check memory at the start of sessions.

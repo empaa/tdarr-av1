@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Reject files over 10 MB from being committed.
+# Install: cp hooks/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+
+LIMIT_MB=10
+LIMIT_BYTES=$((LIMIT_MB * 1024 * 1024))
+failed=0
+
+while IFS= read -r -d '' file; do
+  size=$(git cat-file -s ":${file}" 2>/dev/null) || continue
+  if [[ "$size" -gt "$LIMIT_BYTES" ]]; then
+    echo "BLOCKED: ${file} is $(( size / 1024 / 1024 ))MB (limit: ${LIMIT_MB}MB)"
+    failed=$((failed + 1))
+  fi
+done < <(git diff --cached --name-only -z)
+
+if [[ $failed -gt 0 ]]; then
+  echo ""
+  echo "Remove the large file(s) from the index with: git reset HEAD <file>"
+  exit 1
+fi
