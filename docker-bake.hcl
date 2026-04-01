@@ -12,8 +12,11 @@ variable "CACHE_DIR" {
 
 target "_defaults" {
   dockerfile = "Dockerfile"
-  cache-from = ["type=local,src=${CACHE_DIR}"]
-  cache-to   = ["type=local,dest=${CACHE_DIR},mode=max"]
+  cache-from = [
+    "type=local,src=${CACHE_DIR}/av1-stack",
+    "type=local,src=${CACHE_DIR}/tdarr",
+    "type=local,src=${CACHE_DIR}/tdarr_node",
+  ]
 }
 
 target "av1-stack" {
@@ -22,6 +25,7 @@ target "av1-stack" {
   platforms = [PLATFORM]
   tags      = ["av1-stack:${ARCH}"]
   output    = ["type=cacheonly"]
+  cache-to  = ["type=local,dest=${CACHE_DIR}/av1-stack,mode=max"]
 }
 
 target "av1-stack-load" {
@@ -36,6 +40,7 @@ target "tdarr" {
   tags      = ["tdarr:${ARCH}"]
   output    = ["type=docker"]
   contexts  = { av1-stack = "target:av1-stack" }
+  cache-to  = ["type=local,dest=${CACHE_DIR}/tdarr,mode=max"]
 }
 
 target "tdarr_node" {
@@ -45,6 +50,7 @@ target "tdarr_node" {
   tags      = ["tdarr_node:${ARCH}"]
   output    = ["type=docker"]
   contexts  = { av1-stack = "target:av1-stack" }
+  cache-to  = ["type=local,dest=${CACHE_DIR}/tdarr_node,mode=max"]
 }
 
 group "default" {
