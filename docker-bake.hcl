@@ -53,10 +53,6 @@ target "tdarr_node" {
   cache-to  = ["type=local,dest=${CACHE_DIR}/tdarr_node,mode=max"]
 }
 
-group "default" {
-  targets = ["tdarr", "tdarr_node"]
-}
-
 group "stack-only" {
   targets = ["av1-stack-load"]
 }

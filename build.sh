@@ -152,11 +152,16 @@ build_stack() {
 
 build_tdarr() {
   local platform="$1" arch="$2"
-  echo "==> Building tdarr + tdarr_node (${platform})..."
+  echo "==> Building tdarr (${platform})..."
   ARCH="${arch}" PLATFORM="${platform}" \
     docker buildx bake \
     --builder "${BUILDER_NAME}" \
-    default
+    tdarr
+  echo "==> Building tdarr_node (${platform})..."
+  ARCH="${arch}" PLATFORM="${platform}" \
+    docker buildx bake \
+    --builder "${BUILDER_NAME}" \
+    tdarr_node
 }
 
 # ── tests ────────────────────────────────────────────────────────────────────
