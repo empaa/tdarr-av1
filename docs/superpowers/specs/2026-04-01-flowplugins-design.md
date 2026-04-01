@@ -57,7 +57,7 @@ Source lives in the repo at `plugins/` and is COPYed into the Tdarr plugin path 
 - **Output 2:** File not processed (compression target not met)
 - **Error handle:** Plugin failure (crash, unexpected exit)
 
-Two explicit outputs are declared. Errors trigger Tdarr's built-in error handle, not a third output.
+Two explicit outputs are declared. Output 2 passes through the original input file unchanged (no processing occurred, but it is not an error). Errors trigger Tdarr's built-in error handle, not a third output.
 
 ## Shared Library Modules
 
