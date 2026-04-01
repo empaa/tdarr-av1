@@ -60,10 +60,11 @@ Builds the `av1-stack` target and validates it.
 **Flags:**
 - `--encode` — run actual encode tests against `test/samples/`
 - `--all-platforms` — build and test both `linux/amd64` and `linux/arm64`
-- `--clean` — remove cached `av1-stack:local` image(s) and wipe `test/output/stack/`
+- `--clean` — remove cached `av1-stack:amd64` / `av1-stack:arm64` image(s) and wipe `test/output/stack/`
 
 **Steps (default):**
-1. `docker buildx build --target av1-stack --output type=docker,name=av1-stack:local`
+1. `docker buildx build --target av1-stack --output type=docker,name=av1-stack:<arch>`
+   (e.g. `av1-stack:arm64` on an M-series Mac, `av1-stack:amd64` on x86)
 2. Binary checks inside the container (`--entrypoint ""`): `av1an --version`, `ab-av1 --version`, `ffmpeg -version`
 
 **With `--encode`:**
