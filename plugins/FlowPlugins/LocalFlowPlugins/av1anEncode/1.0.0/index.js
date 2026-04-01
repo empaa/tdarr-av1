@@ -260,8 +260,8 @@ const plugin = async (args) => {
   }
 
   if (encodeOk) {
-    if (!fs.existsSync(outputPath)) {
-      jobLog(`ERROR: encoder output not found: ${outputPath}`);
+    if (!fs.existsSync(outputPath) || fs.statSync(outputPath).size === 0) {
+      jobLog(`ERROR: encoder output not found or empty: ${outputPath}`);
       encodeOk = false;
     } else {
       const videoOnlyPath = outputPath + '.videoonly.mkv';
