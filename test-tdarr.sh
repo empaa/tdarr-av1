@@ -36,10 +36,10 @@ build_image() {
   fi
 
   echo "==> Building Dockerfile.${name}.test (${platform})..."
-  docker buildx build \
+  DOCKER_BUILDKIT=1 docker build \
     --platform "${platform}" \
     --build-arg ARCH="${arch}" \
-    --output "type=docker,name=${image}" \
+    --tag "${image}" \
     -f "Dockerfile.${name}.test" \
     .
 }
@@ -55,7 +55,7 @@ run_binary_checks() {
     printf "  %-12s" "$bin"
     local version_flag="--version"
     [[ "$bin" == "ffmpeg" ]] && version_flag="-version"
-    if docker run --rm --platform "${platform}" "${image}" "$bin" $version_flag > /dev/null 2>&1; then
+    if docker run --rm --entrypoint "" --platform "${platform}" "${image}" "$bin" $version_flag > /dev/null 2>&1; then
       echo "OK"
     else
       echo "FAILED"

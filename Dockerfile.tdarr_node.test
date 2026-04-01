@@ -1,9 +1,17 @@
 ARG ARCH=amd64
 FROM av1-stack-test:${ARCH} AS stack
+# tdarr base is Ubuntu 24.04 (no Python 3.10); stack was built on Ubuntu 22.04.
+# Copy the arch-specific libpython3.10.so.1.0 into /usr/local/lib so it's included in the COPY below.
+RUN TRIPLET=$([ "$(uname -m)" = "x86_64" ] && echo "x86_64-linux-gnu" || echo "aarch64-linux-gnu") && \
+    cp /usr/lib/${TRIPLET}/libpython3.10.so.1.0 /usr/local/lib/
 
 FROM ghcr.io/haveagitgat/tdarr_node:latest
 COPY --from=stack /usr/local /usr/local
 COPY --from=stack /etc/vapoursynth /etc/vapoursynth
+# Python 3.10 stdlib required by av1an (compiled-in default path; absent on Ubuntu 24.04)
+COPY --from=stack /usr/lib/python3.10 /usr/lib/python3.10
+# PYTHONPATH not inherited from the stack image's ENV — set it explicitly
+ENV PYTHONPATH=/usr/local/lib/python3.10/site-packages
 RUN ldconfig && \
     apt-get update && \
     apt-get install -y mkvtoolnix && \
