@@ -218,8 +218,10 @@ COPY --from=av1-stack /etc/vapoursynth /etc/vapoursynth
 ENV PYTHONPATH=/usr/local/lib/python3.12/site-packages
 RUN ldconfig && \
     apt-get update && \
-    apt-get install -y mkvtoolnix && \
+    apt-get install -y --no-install-recommends mkvtoolnix && \
     rm -rf /var/lib/apt/lists/*
+RUN ln -sf /usr/local/share/vmaf/vmaf_v0.6.1.json /vmaf_v0.6.1.json \
+    && ln -sf /usr/local/share/vmaf/vmaf_4k_v0.6.1.json /vmaf_4k_v0.6.1.json
 
 FROM ghcr.io/haveagitgat/tdarr_node:latest AS tdarr_node
 COPY --from=av1-stack /usr/local /usr/local
@@ -227,5 +229,7 @@ COPY --from=av1-stack /etc/vapoursynth /etc/vapoursynth
 ENV PYTHONPATH=/usr/local/lib/python3.12/site-packages
 RUN ldconfig && \
     apt-get update && \
-    apt-get install -y mkvtoolnix && \
+    apt-get install -y --no-install-recommends mkvtoolnix && \
     rm -rf /var/lib/apt/lists/*
+RUN ln -sf /usr/local/share/vmaf/vmaf_v0.6.1.json /vmaf_v0.6.1.json \
+    && ln -sf /usr/local/share/vmaf/vmaf_4k_v0.6.1.json /vmaf_4k_v0.6.1.json
