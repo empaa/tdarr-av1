@@ -23,7 +23,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     libssl-dev \
     xxd \
-    && ln -sf /usr/bin/cython3 /usr/bin/cython \
+    && (ln -sf /usr/bin/cython3 /usr/bin/cython || true) \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Rust stable
