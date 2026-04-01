@@ -1,0 +1,10 @@
+ARG ARCH=amd64
+FROM av1-stack-test:${ARCH} AS stack
+
+FROM ghcr.io/haveagitgat/tdarr_node:latest
+COPY --from=stack /usr/local /usr/local
+COPY --from=stack /etc/vapoursynth /etc/vapoursynth
+RUN ldconfig && \
+    apt-get update && \
+    apt-get install -y mkvtoolnix && \
+    rm -rf /var/lib/apt/lists/*
