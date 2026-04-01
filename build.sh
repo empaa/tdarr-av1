@@ -408,6 +408,7 @@ fi
 
 if [[ "$PUBLISH_ONLY" == false ]]; then
   ensure_builder
+  mkdir -p "${SCRIPT_DIR}/.buildcache"
   # Build and test
   for arch in "${ARCHES[@]}"; do
     platform="linux/${arch}"
