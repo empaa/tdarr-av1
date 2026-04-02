@@ -214,6 +214,10 @@ RUN ln -sf /usr/local/share/vmaf/vmaf_v0.6.1.json /vmaf_v0.6.1.json \
     && ln -sf /usr/local/share/vmaf/vmaf_4k_v0.6.1.json /vmaf_4k_v0.6.1.json
 
 FROM ghcr.io/haveagitgat/tdarr:latest AS tdarr
+# On amd64, the Tdarr base image has an s6 init script (03-setup-ffmpeg) that
+# symlinks Jellyfin's ffmpeg (no libvmaf) to /usr/local/bin/ffmpeg on every
+# container start. Remove it so our custom ffmpeg is not overwritten at runtime.
+RUN rm -f /etc/cont-init.d/03-setup-ffmpeg
 COPY --from=av1-stack /usr/local /usr/local
 COPY --from=av1-stack /etc/vapoursynth /etc/vapoursynth
 ENV PYTHONPATH=/usr/local/lib/python3.12/site-packages
@@ -225,6 +229,7 @@ RUN ln -sf /usr/local/share/vmaf/vmaf_v0.6.1.json /vmaf_v0.6.1.json \
     && ln -sf /usr/local/share/vmaf/vmaf_4k_v0.6.1.json /vmaf_4k_v0.6.1.json
 
 FROM ghcr.io/haveagitgat/tdarr_node:latest AS tdarr_node
+RUN rm -f /etc/cont-init.d/03-setup-ffmpeg
 COPY --from=av1-stack /usr/local /usr/local
 COPY --from=av1-stack /etc/vapoursynth /etc/vapoursynth
 ENV PYTHONPATH=/usr/local/lib/python3.12/site-packages

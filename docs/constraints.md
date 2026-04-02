@@ -37,3 +37,14 @@ to load VSScript at runtime. R73 is the first release with API v4.
 **Why:** FFmpeg 8.1 added `SVT_AV1_CHECK_VERSION(4, 0, 0)` guards in
 `libavcodec/libsvtav1.c`, handling both 3.x and 4.x APIs at compile time.
 Earlier FFmpeg versions do not know about the 4.x API and will fail to build.
+
+---
+
+## Jellyfin FFmpeg init script removal (amd64)
+
+**Constraint:** The `tdarr` and `tdarr_node` targets must `rm -f /etc/cont-init.d/03-setup-ffmpeg`.
+
+**Why:** On amd64, the Tdarr base image ships an s6-overlay init script that
+symlinks Jellyfin's ffmpeg (no libvmaf) to `/usr/local/bin/ffmpeg` on every
+container start. This overwrites our custom ffmpeg at runtime regardless of what
+the Dockerfile does at build time. Removing the init script is the only fix.

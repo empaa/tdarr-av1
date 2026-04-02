@@ -19,7 +19,10 @@ target to point at the compiled VapourSynth Python bindings.
 
 **FFmpeg shadowing:** Our FFmpeg at `/usr/local/bin/ffmpeg` takes precedence over
 Tdarr's bundled `/usr/bin/ffmpeg` via standard `$PATH` ordering. No wrappers or
-`LD_LIBRARY_PATH` manipulation needed.
+`LD_LIBRARY_PATH` manipulation needed. On amd64, the Tdarr base image ships an
+s6 init script (`/etc/cont-init.d/03-setup-ffmpeg`) that symlinks Jellyfin's
+ffmpeg (no libvmaf) to `/usr/local/bin/ffmpeg` on every container start. The
+Dockerfile removes this script — do not remove the `rm -f` step.
 
 **glibc compatibility:** The `base` stage matches Tdarr's Ubuntu version exactly.
 See `docs/constraints.md` for the pinned version.
