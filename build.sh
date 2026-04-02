@@ -13,6 +13,7 @@ PUBLISH=false
 CLEAN=false
 CLEAN_CACHE=false
 ALL_PLATFORMS=false
+INTERACTIVE=false
 SPECIFIC_ARCH=""
 ARCH_COUNT=0
 
@@ -27,6 +28,7 @@ for arg in "$@"; do
     --publish)       PUBLISH=true ;;
     --clean)         CLEAN=true ;;
     --clean-cache)   CLEAN_CACHE=true ;;
+    --interactive)   INTERACTIVE=true ;;
     *) echo "Unknown flag: $arg" >&2; exit 1 ;;
   esac
 done
@@ -50,12 +52,17 @@ if [[ "$STACK_ONLY" == true && "$PUBLISH" == true ]]; then
 fi
 
 if [[ "$CLEAN" == true || "$CLEAN_CACHE" == true ]]; then
-  for flag in "$STACK_ONLY" "$ENCODE" "$PUBLISH"; do
+  for flag in "$STACK_ONLY" "$ENCODE" "$PUBLISH" "$INTERACTIVE"; do
     if [[ "$flag" == true ]]; then
       echo "Error: --clean/--clean-cache cannot be combined with build/test/publish flags" >&2
       exit 1
     fi
   done
+fi
+
+if [[ "$INTERACTIVE" == true && "$STACK_ONLY" == true ]]; then
+  echo "Error: --interactive requires full tdarr_node image, not --stack-only" >&2
+  exit 1
 fi
 
 # ── helpers ──────────────────────────────────────────────────────────────────
@@ -299,6 +306,113 @@ run_encode_test() {
   echo "done"
 }
 
+# ── interactive ──────────────────────────────────────────────────────────────
+
+run_interactive() {
+  local arch="$1" platform="linux/${arch}"
+  local samples_dir="${SCRIPT_DIR}/test/samples"
+  local output_dir="${SCRIPT_DIR}/test/output/interactive"
+  local config_dir="${SCRIPT_DIR}/test/tdarr_config"
+  local net="tdarr-interactive-net"
+  local server_name="tdarr-interactive-server"
+  local node_name="tdarr-interactive-node"
+
+  mkdir -p "$output_dir" \
+    "${config_dir}/server" "${config_dir}/configs" \
+    "${config_dir}/logs" "${config_dir}/temp"
+
+  # Clean up any leftover containers from a previous run
+  docker rm -f "$server_name" "$node_name" > /dev/null 2>&1 || true
+  docker network rm "$net" > /dev/null 2>&1 || true
+
+  docker network create "$net" > /dev/null 2>&1
+
+  echo ""
+  echo "════════════════════════════════════════"
+  echo "  Starting Tdarr (${platform})"
+  echo "════════════════════════════════════════"
+  echo ""
+
+  # Start server with dashboard exposed and media mounted
+  echo "==> Starting tdarr server..."
+  docker run -d \
+    --network "$net" \
+    --name "$server_name" \
+    --platform "${platform}" \
+    -p 8265:8265 \
+    -e serverIP=0.0.0.0 \
+    -e serverPort=8266 \
+    -e webUIPort=8265 \
+    -e internalNode=false \
+    -v "${samples_dir}:/media/samples" \
+    -v "${output_dir}:/media/output" \
+    -v "${config_dir}/server:/app/server" \
+    -v "${config_dir}/configs:/app/configs" \
+    -v "${config_dir}/logs:/app/logs" \
+    -v "${config_dir}/temp:/temp" \
+    "tdarr:${arch}" > /dev/null
+
+  # Wait for server to be ready
+  echo -n "==> Waiting for server..."
+  local server_ok=false
+  for _ in $(seq 1 60); do
+    if docker exec "$server_name" curl -sf http://localhost:8265 > /dev/null 2>&1; then
+      server_ok=true
+      break
+    fi
+    echo -n "."
+    sleep 1
+  done
+  echo ""
+
+  if [[ "$server_ok" != true ]]; then
+    echo "ERROR: Server failed to start. Logs:" >&2
+    docker logs "$server_name" 2>&1 | tail -20
+    docker rm -f "$server_name" > /dev/null 2>&1 || true
+    docker network rm "$net" > /dev/null 2>&1 || true
+    return 1
+  fi
+
+  # Start node connected to server, with same media mounts
+  echo "==> Starting tdarr_node..."
+  docker run -d \
+    --network "$net" \
+    --name "$node_name" \
+    --platform "${platform}" \
+    -e serverIP="$server_name" \
+    -e serverPort=8266 \
+    -e nodeName=test-node \
+    -v "${samples_dir}:/media/samples" \
+    -v "${output_dir}:/media/output" \
+    -v "${config_dir}/configs:/app/configs" \
+    -v "${config_dir}/logs:/app/logs" \
+    -v "${config_dir}/temp:/temp" \
+    "tdarr_node:${arch}" > /dev/null
+
+  echo ""
+  echo "════════════════════════════════════════"
+  echo "  Tdarr is running"
+  echo "════════════════════════════════════════"
+  echo ""
+  echo "  Dashboard:  http://localhost:8265"
+  echo ""
+  echo "  Media paths inside containers:"
+  echo "    /media/samples  <- test/samples/"
+  echo "    /media/output   <- test/output/interactive/"
+  echo ""
+  echo "  Config persisted at: test/tdarr_config/"
+  echo ""
+  echo "  Press Enter to stop and clean up..."
+  echo "════════════════════════════════════════"
+
+  read -r
+
+  echo "==> Stopping containers..."
+  docker rm -f "$node_name" "$server_name" > /dev/null 2>&1 || true
+  docker network rm "$net" > /dev/null 2>&1 || true
+  echo "Done."
+}
+
 # ── publish ──────────────────────────────────────────────────────────────────
 
 check_local_images() {
@@ -433,6 +547,11 @@ if [[ "$PUBLISH_ONLY" == false ]]; then
   print_summary || {
     exit 1
   }
+fi
+
+# Interactive Tdarr stack if requested
+if [[ "$INTERACTIVE" == true ]]; then
+  run_interactive "${ARCHES[0]}"
 fi
 
 # Publish if requested
