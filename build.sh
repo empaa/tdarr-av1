@@ -262,8 +262,16 @@ run_encode_test() {
   done < <(find "$samples_dir" -maxdepth 1 -type f ! -name '.gitkeep' ! -name '.*' -print0)
 
   if [[ ${#SAMPLE_FILES[@]} -eq 0 ]]; then
-    echo "WARNING: No sample files in test/samples/ — skipping encode tests"
-    return 0
+    echo "==> No sample files found, generating synthetic clip..."
+    bash "${SCRIPT_DIR}/test/genSample.sh"
+    # Re-scan after generation
+    while IFS= read -r -d '' f; do
+      SAMPLE_FILES+=("$f")
+    done < <(find "$samples_dir" -maxdepth 1 -type f ! -name '.gitkeep' ! -name '.*' -print0)
+    if [[ ${#SAMPLE_FILES[@]} -eq 0 ]]; then
+      echo "ERROR: Sample generation failed — skipping encode tests" >&2
+      return 1
+    fi
   fi
 
   echo -n "Encode tests (${platform}, ${#SAMPLE_FILES[@]} sample(s))... "
@@ -280,7 +288,14 @@ run_encode_test() {
       -v "${output_dir}:/output" \
       "${image}" bash -c '
         set -e
-        ffmpeg -y -ss 00:01:00 -t 60 -i "/samples/$1" -c copy "/output/$2_clip.mkv" 2>/dev/null
+        # Get duration; skip clip extraction for short files (< 120s)
+        duration=$(ffprobe -v error -show_entries format=duration \
+          -of csv=p=0 "/samples/$1" 2>/dev/null | cut -d. -f1)
+        if [[ "${duration:-0}" -ge 120 ]]; then
+          ffmpeg -y -ss 00:01:00 -t 60 -i "/samples/$1" -c copy "/output/$2_clip.mkv" 2>/dev/null
+        else
+          cp "/samples/$1" "/output/$2_clip.mkv"
+        fi
         av1an -i "/output/$2_clip.mkv" --encoder aom --target-quality 90 --verbose \
           -o "/output/$2_av1an_aom.mkv"
         av1an -i "/output/$2_clip.mkv" --encoder svt-av1 --target-quality 90 --verbose \
