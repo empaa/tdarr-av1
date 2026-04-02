@@ -223,8 +223,6 @@ RUN ldconfig && \
     rm -rf /var/lib/apt/lists/*
 RUN ln -sf /usr/local/share/vmaf/vmaf_v0.6.1.json /vmaf_v0.6.1.json \
     && ln -sf /usr/local/share/vmaf/vmaf_4k_v0.6.1.json /vmaf_4k_v0.6.1.json
-# FlowPlugins for av1an and ab-av1
-COPY plugins/FlowPlugins/LocalFlowPlugins/ /app/Tdarr_Server/plugins/FlowPlugins/LocalFlowPlugins/
 
 FROM ghcr.io/haveagitgat/tdarr_node:latest AS tdarr_node
 COPY --from=av1-stack /usr/local /usr/local
@@ -236,5 +234,3 @@ RUN ldconfig && \
     rm -rf /var/lib/apt/lists/*
 RUN ln -sf /usr/local/share/vmaf/vmaf_v0.6.1.json /vmaf_v0.6.1.json \
     && ln -sf /usr/local/share/vmaf/vmaf_4k_v0.6.1.json /vmaf_4k_v0.6.1.json
-# FlowPlugins for av1an and ab-av1
-COPY plugins/FlowPlugins/LocalFlowPlugins/ /app/Tdarr_Node/assets/app/plugins/FlowPlugins/LocalFlowPlugins/
