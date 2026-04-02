@@ -458,10 +458,11 @@ publish_images() {
         docker push "${REGISTRY}/${target}:${arch}"
       done
       echo "==> Creating manifest ${REGISTRY}/${target}:latest..."
-      docker manifest create --amend "${REGISTRY}/${target}:latest" \
+      docker manifest rm "${REGISTRY}/${target}:latest" 2>/dev/null || true
+      docker manifest create "${REGISTRY}/${target}:latest" \
         "${REGISTRY}/${target}:amd64" \
         "${REGISTRY}/${target}:arm64"
-      docker manifest push "${REGISTRY}/${target}:latest"
+      docker manifest push --purge "${REGISTRY}/${target}:latest"
     else
       local arch="${arches[0]}"
       echo "==> Pushing ${REGISTRY}/${target}:latest..."
