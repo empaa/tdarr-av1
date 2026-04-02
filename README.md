@@ -20,8 +20,6 @@ Inside the container you get two additional tools available to Tdarr plugin scri
 
 The official Tdarr images do not include av1an or ab-av1. This project bridges that gap so plugin scripts can call these tools directly.
 
-## Status
+## Plugins
 
-**Working:** av1an and ab-av1 are available inside the container.
-
-**WIP:** Tdarr plugins that use these tools are not yet included.
+Tdarr FlowPlugins for AV1 encoding using these images are in the sibling repo: [tdarr-plugins](https://github.com/empaa/tdarr-plugins)
