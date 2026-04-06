@@ -53,7 +53,10 @@ RUN wget -q "https://storage.googleapis.com/aom-releases/libaom-3.13.2.tar.gz" \
         -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_INSTALL_PREFIX=/usr/local \
-        -DBUILD_SHARED_LIBS=ON && \
+        -DBUILD_SHARED_LIBS=ON \
+        -DENABLE_NASM=ON \
+        -DENABLE_DOCS=OFF \
+        -DENABLE_TESTS=OFF && \
     cmake --build /src/aom_build -j$(nproc) && \
     cmake --install /src/aom_build && \
     ldconfig && \
@@ -218,6 +221,8 @@ FROM ghcr.io/haveagitgat/tdarr:latest AS tdarr
 # symlinks Jellyfin's ffmpeg (no libvmaf) to /usr/local/bin/ffmpeg on every
 # container start. Remove it so our custom ffmpeg is not overwritten at runtime.
 RUN rm -f /etc/cont-init.d/03-setup-ffmpeg
+# Remove system libaom (3.8.x) so the linker uses our custom build in /usr/local.
+RUN apt-get remove -y libaom3 || true
 COPY --from=av1-stack /usr/local /usr/local
 COPY --from=av1-stack /etc/vapoursynth /etc/vapoursynth
 ENV PYTHONPATH=/usr/local/lib/python3.12/site-packages
@@ -230,6 +235,7 @@ RUN ln -sf /usr/local/share/vmaf/vmaf_v0.6.1.json /vmaf_v0.6.1.json \
 
 FROM ghcr.io/haveagitgat/tdarr_node:latest AS tdarr_node
 RUN rm -f /etc/cont-init.d/03-setup-ffmpeg
+RUN apt-get remove -y libaom3 || true
 COPY --from=av1-stack /usr/local /usr/local
 COPY --from=av1-stack /etc/vapoursynth /etc/vapoursynth
 ENV PYTHONPATH=/usr/local/lib/python3.12/site-packages
