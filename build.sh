@@ -182,6 +182,60 @@ run_binary_checks() {
       add_result "$platform" "${bin} (${label})" "FAILED"
     fi
   done
+
+  # Verify expected version strings
+  local output
+  output=$(docker run --rm --entrypoint "" --platform "${platform}" "${image}" \
+    bash -c '
+      av1an --version 2>&1
+      ab-av1 --version 2>&1
+      ffmpeg -version 2>&1 | head -1
+    ' 2>&1) || true
+
+  for pair in "av1an:0.5.2" "ab-av1:0.11.2" "ffmpeg:8.1"; do
+    local bin="${pair%%:*}" expected="${pair##*:}"
+    if echo "$output" | grep -qi "${bin}.*${expected}"; then
+      add_result "$platform" "${bin} version ${expected} (${label})" "OK"
+    else
+      add_result "$platform" "${bin} version ${expected} (${label})" "FAILED"
+    fi
+  done
+
+  # Verify all custom-built libraries resolve to /usr/local (not system packages).
+  # Each entry: "binary|lib_pattern|friendly_name"
+  local -a lib_checks=(
+    "ffmpeg|libaom|libaom"
+    "ffmpeg|libSvtAv1Enc|libsvtav1"
+    "ffmpeg|libvmaf|libvmaf"
+    "aomenc|libaom|libaom"
+    "av1an|libvapoursynth|libvapoursynth"
+    "vspipe|libvapoursynth|libvapoursynth"
+  )
+
+  local ldd_output
+  ldd_output=$(docker run --rm --entrypoint "" --platform "${platform}" "${image}" \
+    bash -c '
+      for b in ffmpeg aomenc av1an vspipe; do
+        echo "=== $b ==="
+        ldd /usr/local/bin/$b 2>&1
+      done
+    ' 2>&1) || true
+
+  for entry in "${lib_checks[@]}"; do
+    local bin="${entry%%|*}" remainder="${entry#*|}"
+    local lib_pattern="${remainder%%|*}" lib_name="${remainder##*|}"
+    local matched_line
+    matched_line=$(echo "$ldd_output" \
+      | sed -n "/=== ${bin} ===/,/=== /p" \
+      | grep "$lib_pattern") || true
+
+    if echo "$matched_line" | grep -q '/usr/local/lib'; then
+      add_result "$platform" "${lib_name} path via ${bin} (${label})" "OK"
+    else
+      add_result "$platform" "${lib_name} path via ${bin} (${label})" "FAILED"
+    fi
+  done
+
   echo "done"
 }
 
