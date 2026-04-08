@@ -48,3 +48,14 @@ Earlier FFmpeg versions do not know about the 4.x API and will fail to build.
 symlinks Jellyfin's ffmpeg (no libvmaf) to `/usr/local/bin/ffmpeg` on every
 container start. This overwrites our custom ffmpeg at runtime regardless of what
 the Dockerfile does at build time. Removing the init script is the only fix.
+
+---
+
+## vs-nlm-ispc v2 + ISPC v1.30.0
+
+**Constraint:** Pin vs-nlm-ispc to tag v2 and ISPC compiler to v1.30.0.
+
+**Why:** vs-nlm-ispc v2 is the latest release. ISPC v1.30.0 is the latest
+stable release with arm64 Linux support. The ISPC instruction set flags differ
+per architecture: arm64 requires `-DCMAKE_ISPC_INSTRUCTION_SETS="neon-i32x4"`,
+amd64 uses defaults (SSE2/AVX2 multi-target).

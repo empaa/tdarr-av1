@@ -41,9 +41,10 @@ base (Ubuntu 24.04 + build tools + Rust)
  │
  ├── build-ffmpeg  ←── svtav1, libaom, libvmaf
  │
- ├── build-lsmash  ←── vapoursynth, ffmpeg
- ├── build-av1an   ←── vapoursynth, ffmpeg
- └── build-ab-av1       (Rust only; independent)
+ ├── build-lsmash    ←── vapoursynth, ffmpeg
+ ├── build-av1an     ←── vapoursynth, ffmpeg
+ ├── build-ab-av1         (Rust only; independent)
+ └── build-nlm-ispc ←── vapoursynth
           │
           ▼
       av1-stack  ←── all build-* stages (named target; test + layer source)
