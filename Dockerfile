@@ -182,6 +182,43 @@ RUN git clone --depth 1 --branch v0.5.2 \
     cp target/release/av1an /usr/local/bin/ && \
     rm -rf /src
 
+FROM base AS build-nlm-ispc
+
+COPY --from=build-vapoursynth /usr/local /usr/local
+RUN ldconfig
+
+ARG TARGETARCH
+
+# Install ISPC compiler (build-time only, not carried to final images)
+RUN case "${TARGETARCH}" in \
+      amd64) ISPC_SUFFIX="linux" ;; \
+      arm64) ISPC_SUFFIX="linux.aarch64" ;; \
+    esac && \
+    wget -q "https://github.com/ispc/ispc/releases/download/v1.30.0/ispc-v1.30.0-${ISPC_SUFFIX}.tar.gz" \
+        -O /tmp/ispc.tar.gz && \
+    tar xf /tmp/ispc.tar.gz -C /opt && \
+    mv /opt/ispc-v1.30.0-* /opt/ispc && \
+    rm /tmp/ispc.tar.gz
+
+ENV PATH="/opt/ispc/bin:${PATH}"
+
+# vs-nlm-ispc v2: ISPC-based NLMeans denoiser (amd64 SSE2/AVX2, arm64 NEON)
+RUN git clone --depth 1 --branch v2 \
+        https://github.com/AmusementClub/vs-nlm-ispc.git /src/nlm-ispc && \
+    cd /src/nlm-ispc && \
+    if [ "${TARGETARCH}" = "arm64" ]; then \
+      ISPC_FLAGS='-DCMAKE_ISPC_INSTRUCTION_SETS=neon-i32x4 -DCMAKE_ISPC_FLAGS=--opt=fast-math'; \
+    else \
+      ISPC_FLAGS=""; \
+    fi && \
+    cmake -S . -B build \
+        -DCMAKE_BUILD_TYPE=Release \
+        ${ISPC_FLAGS} && \
+    cmake --build build -j$(nproc) && \
+    mkdir -p /usr/local/lib/vapoursynth && \
+    cp build/libvsnlm_ispc.so /usr/local/lib/vapoursynth/ && \
+    rm -rf /src
+
 FROM base AS build-ab-av1
 
 RUN cargo install ab-av1 --version 0.11.2 --root /usr/local
@@ -196,6 +233,7 @@ COPY --from=build-ffmpeg      /usr/local /usr/local
 COPY --from=build-lsmash      /usr/local /usr/local
 COPY --from=build-av1an       /usr/local /usr/local
 COPY --from=build-ab-av1      /usr/local /usr/local
+COPY --from=build-nlm-ispc    /usr/local /usr/local
 
 # Ubuntu 24.04 Python uses dist-packages; VapourSynth installs to site-packages.
 # Set PYTHONPATH so getVSScriptAPI can import the vapoursynth module at runtime.
