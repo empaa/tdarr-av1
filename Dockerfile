@@ -219,6 +219,22 @@ RUN git clone --depth 1 --branch v2 \
     cp build/libvsnlm_ispc.so /usr/local/lib/vapoursynth/ && \
     rm -rf /src
 
+FROM base AS build-addgrain
+
+COPY --from=build-vapoursynth /usr/local /usr/local
+RUN ldconfig
+
+# vs-addgrain r10: Gaussian noise generator for denoiser calibration
+RUN git clone --depth 1 --branch r10 \
+        https://github.com/HomeOfVapourSynthEvolution/VapourSynth-AddGrain.git /src/addgrain && \
+    meson setup /src/addgrain/build /src/addgrain \
+        --buildtype=release \
+        --prefix=/usr/local && \
+    ninja -C /src/addgrain/build && \
+    ninja -C /src/addgrain/build install && \
+    ldconfig && \
+    rm -rf /src
+
 FROM base AS build-ab-av1
 
 RUN cargo install ab-av1 --version 0.11.2 --root /usr/local
@@ -234,6 +250,7 @@ COPY --from=build-lsmash      /usr/local /usr/local
 COPY --from=build-av1an       /usr/local /usr/local
 COPY --from=build-ab-av1      /usr/local /usr/local
 COPY --from=build-nlm-ispc    /usr/local /usr/local
+COPY --from=build-addgrain    /usr/local /usr/local
 
 # Ubuntu 24.04 Python uses dist-packages; VapourSynth installs to site-packages.
 # Set PYTHONPATH so getVSScriptAPI can import the vapoursynth module at runtime.

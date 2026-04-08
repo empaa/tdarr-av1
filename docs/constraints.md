@@ -59,3 +59,12 @@ the Dockerfile does at build time. Removing the init script is the only fix.
 stable release with arm64 Linux support. The ISPC instruction set flags differ
 per architecture: arm64 requires `-DCMAKE_ISPC_INSTRUCTION_SETS="neon-i32x4"`,
 amd64 uses defaults (SSE2/AVX2 multi-target).
+
+---
+
+## vs-addgrain r10
+
+**Constraint:** Pin VapourSynth-AddGrain to tag r10.
+
+**Why:** r10 is the latest release. Pure C++ with optional x86 SIMD and C
+fallback for arm64. Used for denoiser calibration (adding known Gaussian noise).

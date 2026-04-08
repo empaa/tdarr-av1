@@ -244,12 +244,14 @@ run_plugin_checks() {
 
   echo -n "Plugin checks ${label} (${platform})... "
 
-  if docker run --rm --entrypoint "" --platform "${platform}" "${image}" \
-      python3 -c "import vapoursynth as vs; core = vs.core; assert hasattr(core, 'nlm_ispc')" > /dev/null 2>&1; then
-    add_result "$platform" "nlm_ispc (${label})" "OK"
-  else
-    add_result "$platform" "nlm_ispc (${label})" "FAILED"
-  fi
+  for plugin in nlm_ispc grain; do
+    if docker run --rm --entrypoint "" --platform "${platform}" "${image}" \
+        python3 -c "import vapoursynth as vs; core = vs.core; assert hasattr(core, '${plugin}')" > /dev/null 2>&1; then
+      add_result "$platform" "${plugin} (${label})" "OK"
+    else
+      add_result "$platform" "${plugin} (${label})" "FAILED"
+    fi
+  done
 
   echo "done"
 }
