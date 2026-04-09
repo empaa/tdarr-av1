@@ -202,14 +202,14 @@ run_binary_checks() {
   done
 
   # Verify all custom-built libraries resolve to /usr/local (not system packages).
-  # Each entry: "binary|lib_pattern|friendly_name"
+  # Each entry: "binary:lib_pattern:friendly_name"
   local -a lib_checks=(
-    "ffmpeg|libaom|libaom"
-    "ffmpeg|libSvtAv1Enc|libsvtav1"
-    "ffmpeg|libvmaf|libvmaf"
-    "aomenc|libaom|libaom"
-    "av1an|libvapoursynth|libvapoursynth"
-    "vspipe|libvapoursynth|libvapoursynth"
+    "ffmpeg:libaom:libaom"
+    "ffmpeg:libSvtAv1Enc:libsvtav1"
+    "ffmpeg:libvmaf:libvmaf"
+    "aomenc:libaom:libaom"
+    "av1an:libvapoursynth\|libvsscript:libvapoursynth"
+    "vspipe:libvapoursynth\|libvsscript:libvapoursynth"
   )
 
   local ldd_output
@@ -222,8 +222,8 @@ run_binary_checks() {
     ' 2>&1) || true
 
   for entry in "${lib_checks[@]}"; do
-    local bin="${entry%%|*}" remainder="${entry#*|}"
-    local lib_pattern="${remainder%%|*}" lib_name="${remainder##*|}"
+    local bin="${entry%%:*}" remainder="${entry#*:}"
+    local lib_pattern="${remainder%%:*}" lib_name="${remainder##*:}"
     local matched_line
     matched_line=$(echo "$ldd_output" \
       | sed -n "/=== ${bin} ===/,/=== /p" \

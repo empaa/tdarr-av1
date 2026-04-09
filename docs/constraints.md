@@ -19,14 +19,20 @@ errors at runtime.
 
 ---
 
-## VapourSynth R73+
+## VapourSynth R74+
 
-**Constraint:** Must use R73 or later. Do not downgrade to R72 or earlier. Do not
-upgrade to R74 until it leaves RC.
+**Constraint:** Must use R74 or later. Do not downgrade to R72 or earlier.
 
 **Why:** av1an 0.5.2 uses the `vapoursynth-rs` Rust crate v0.5.1, which requires
 VSScript API v4. VapourSynth R72 only provides VSScript API v3 — av1an will fail
 to load VSScript at runtime. R73 is the first release with API v4.
+
+**Build notes (R74):** R74 switched from autotools to Meson and renamed
+`libvapoursynth-script` to `libvsscript`. The build uses `build_wheel=true` to get
+vspipe and the Python module, then relocates artifacts to standard paths. A compat
+symlink (`libvapoursynth-script.so → libvsscript.so`) is needed for av1an linking.
+A TOML config at `$HOME/.config/vapoursynth/vapoursynth.toml` is required at runtime
+to map libvsscript to the Python interpreter.
 
 ---
 
@@ -37,6 +43,17 @@ to load VSScript at runtime. R73 is the first release with API v4.
 **Why:** FFmpeg 8.1 added `SVT_AV1_CHECK_VERSION(4, 0, 0)` guards in
 `libavcodec/libsvtav1.c`, handling both 3.x and 4.x APIs at compile time.
 Earlier FFmpeg versions do not know about the 4.x API and will fail to build.
+
+---
+
+## Tdarr Base Image Version
+
+**Constraint:** Pin `TDARR_VERSION` to a specific version tag (currently `2.68.01`).
+Do not use `:latest`.
+
+**Why:** Tdarr updates can change the base OS, bundled libraries, or init scripts in
+ways that break our AV1 stack overlay. Pinning lets us verify each update manually
+before adopting it. The same `ARG` controls both the `tdarr` and `tdarr_node` stages.
 
 ---
 
