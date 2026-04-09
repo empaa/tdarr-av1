@@ -65,25 +65,39 @@ inspection.
 On M1 Mac: arm64 compiles natively, amd64 via Rosetta/QEMU (reliable).
 On Intel/AMD Linux: arm64 uses QEMU and may segfault on the SVT-AV1 compile.
 
+## Branching strategy
+
+All development uses feature branches merged with `--no-ff` (merge commits):
+
+```
+main ──────────────●──────────────●──── (stable, release-ready)
+                  ╱              ╱
+dev ────●────●───●────●────●───●────── (integration branch)
+       ╱    ╱              ╱
+      feature/a       feature/b
+```
+
+1. Branch `feature/xyz` from `dev` for any new feature or significant change
+2. Work and commit on the feature branch
+3. Merge to `dev`: `git merge --no-ff feature/xyz`
+4. To revert a feature later: `git revert -m 1 <merge-commit>`
+
+Small fixes (typos, single-line changes) can commit directly to `dev`.
+
 ## Merge workflow
 
 1. Run `./build.sh` locally — must pass
-2. Open PR from `dev` to `main`
-3. Squash merge
-4. **Reset dev to main** — required after squash merge to avoid conflicts:
-   ```bash
-   git fetch origin main && git reset --hard origin/main && git push --force-with-lease origin dev
-   ```
-   Squash merge creates a new commit on main with a different SHA. Without
-   this reset, dev retains the old pre-squash commits and every subsequent PR
-   will have conflicts on files touched by both branches.
+2. Create PR from `dev` to `main`
+3. Merge using **"Create a merge commit"** (not squash, not rebase)
+
+Do not squash merge — it creates divergent histories between dev and main,
+causing conflicts on every subsequent PR.
 
 ## Release workflow
 
 1. Run `./build.sh --all-platforms --encode` locally — must pass (requires sample files)
-2. Merge `dev` → `main` (squash)
-3. Reset dev to main (see merge workflow step 4)
-4. Run `./build.sh --publish --all-platforms` — pushes tested images to GHCR
+2. Merge `dev` → `main` via PR (merge commit, not squash)
+3. Run `./build.sh --publish --all-platforms` — pushes tested images to GHCR
 
 ## Binary list
 
