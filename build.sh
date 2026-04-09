@@ -244,7 +244,7 @@ run_plugin_checks() {
 
   echo -n "Plugin checks ${label} (${platform})... "
 
-  for plugin in nlm_ispc grain; do
+  for plugin in nlm_ispc grain mv; do
     if docker run --rm --entrypoint "" --platform "${platform}" "${image}" \
         python3 -c "import vapoursynth as vs; core = vs.core; assert hasattr(core, '${plugin}')" > /dev/null 2>&1; then
       add_result "$platform" "${plugin} (${label})" "OK"

@@ -45,7 +45,8 @@ base (Ubuntu 24.04 + build tools + Rust)
  ├── build-av1an     ←── vapoursynth, ffmpeg
  ├── build-ab-av1         (Rust only; independent)
  ├── build-nlm-ispc ←── vapoursynth
- └── build-addgrain ←── vapoursynth
+ ├── build-addgrain ←── vapoursynth
+ └── build-mvtools  ←── vapoursynth
           │
           ▼
       av1-stack  ←── all build-* stages (named target; test + layer source)

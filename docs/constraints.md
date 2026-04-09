@@ -68,3 +68,13 @@ amd64 uses defaults (SSE2/AVX2 multi-target).
 
 **Why:** r10 is the latest release. Pure C++ with optional x86 SIMD and C
 fallback for arm64. Used for denoiser calibration (adding known Gaussian noise).
+
+---
+
+## vapoursynth-mvtools v24
+
+**Constraint:** Pin vapoursynth-mvtools to tag v24.
+
+**Why:** v24 is the latest release supporting VapourSynth V3/V4 API. Requires
+FFTW3 (`libfftw3-single3`) at runtime. Has native arm64 NEON support via
+sse2neon.

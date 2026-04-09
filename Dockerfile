@@ -235,6 +235,26 @@ RUN git clone --depth 1 --branch r10 \
     ldconfig && \
     rm -rf /src
 
+FROM base AS build-mvtools
+
+COPY --from=build-vapoursynth /usr/local /usr/local
+RUN ldconfig
+
+RUN apt-get update && apt-get install -y --no-install-recommends libfftw3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# vapoursynth-mvtools v24: motion estimation/compensation for noise analysis
+# Meson derives the VS plugin install path from pkg-config libdir, which may
+# resolve to a multiarch path. Build and manually copy to the VS plugin dir.
+RUN git clone --depth 1 --branch v24 \
+        https://github.com/dubhater/vapoursynth-mvtools.git /src/mvtools && \
+    meson setup /src/mvtools/build /src/mvtools \
+        --buildtype=release && \
+    ninja -C /src/mvtools/build && \
+    mkdir -p /usr/local/lib/vapoursynth && \
+    cp /src/mvtools/build/libmvtools.so /usr/local/lib/vapoursynth/ && \
+    rm -rf /src
+
 FROM base AS build-ab-av1
 
 RUN cargo install ab-av1 --version 0.11.2 --root /usr/local
@@ -251,6 +271,7 @@ COPY --from=build-av1an       /usr/local /usr/local
 COPY --from=build-ab-av1      /usr/local /usr/local
 COPY --from=build-nlm-ispc    /usr/local /usr/local
 COPY --from=build-addgrain    /usr/local /usr/local
+COPY --from=build-mvtools     /usr/local /usr/local
 
 # Ubuntu 24.04 Python uses dist-packages; VapourSynth installs to site-packages.
 # Set PYTHONPATH so getVSScriptAPI can import the vapoursynth module at runtime.
@@ -260,6 +281,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     libpython3.12 \
     mkvtoolnix \
+    libfftw3-single3 \
     && rm -rf /var/lib/apt/lists/*
 
 RUN ldconfig && \
@@ -283,7 +305,7 @@ COPY --from=av1-stack /etc/vapoursynth /etc/vapoursynth
 ENV PYTHONPATH=/usr/local/lib/python3.12/site-packages
 RUN ldconfig && \
     apt-get update && \
-    apt-get install -y --no-install-recommends python3 libpython3.12 mkvtoolnix && \
+    apt-get install -y --no-install-recommends python3 libpython3.12 mkvtoolnix libfftw3-single3 && \
     rm -rf /var/lib/apt/lists/*
 RUN ln -sf /usr/local/share/vmaf/vmaf_v0.6.1.json /vmaf_v0.6.1.json \
     && ln -sf /usr/local/share/vmaf/vmaf_4k_v0.6.1.json /vmaf_4k_v0.6.1.json
@@ -296,7 +318,7 @@ COPY --from=av1-stack /etc/vapoursynth /etc/vapoursynth
 ENV PYTHONPATH=/usr/local/lib/python3.12/site-packages
 RUN ldconfig && \
     apt-get update && \
-    apt-get install -y --no-install-recommends python3 libpython3.12 mkvtoolnix && \
+    apt-get install -y --no-install-recommends python3 libpython3.12 mkvtoolnix libfftw3-single3 && \
     rm -rf /var/lib/apt/lists/*
 RUN ln -sf /usr/local/share/vmaf/vmaf_v0.6.1.json /vmaf_v0.6.1.json \
     && ln -sf /usr/local/share/vmaf/vmaf_4k_v0.6.1.json /vmaf_4k_v0.6.1.json
