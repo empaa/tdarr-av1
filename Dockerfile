@@ -226,7 +226,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN ldconfig && \
     mkdir -p /etc/vapoursynth && \
-    echo "SystemPluginDir=/usr/local/lib/vapoursynth" > /etc/vapoursynth/vapoursynth.conf
+    echo "SystemPluginDir=/usr/local/lib/vapoursynth" > /etc/vapoursynth/vapoursynth.conf && \
+    # R74's wheel-installed Python module ignores SystemPluginDir and only loads
+    # plugins from its own directory. Symlink system plugins into the wheel path.
+    VS_PLUGIN_DIR="$(PYTHONPATH=/usr/local/lib/python3/dist-packages python3 -c \
+        'import vapoursynth; print(vapoursynth.get_plugin_dir())')" && \
+    mkdir -p "${VS_PLUGIN_DIR}" && \
+    for so in /usr/local/lib/vapoursynth/*.so; do \
+        [ -f "$so" ] && ln -sf "$so" "${VS_PLUGIN_DIR}/"; \
+    done
 
 # av1an defaults to looking for vmaf_v0.6.1.json relative to CWD (/). Symlink
 # to the installed model so the default path resolves without --vmaf-path.
