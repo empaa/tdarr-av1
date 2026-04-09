@@ -69,13 +69,21 @@ On Intel/AMD Linux: arm64 uses QEMU and may segfault on the SVT-AV1 compile.
 
 1. Run `./build.sh` locally — must pass
 2. Open PR from `dev` to `main`
-3. Merge
+3. Squash merge
+4. **Reset dev to main** — required after squash merge to avoid conflicts:
+   ```bash
+   git fetch origin main && git reset --hard origin/main && git push --force-with-lease origin dev
+   ```
+   Squash merge creates a new commit on main with a different SHA. Without
+   this reset, dev retains the old pre-squash commits and every subsequent PR
+   will have conflicts on files touched by both branches.
 
 ## Release workflow
 
 1. Run `./build.sh --all-platforms --encode` locally — must pass (requires sample files)
-2. Merge `dev` → `main`
-3. Run `./build.sh --publish --all-platforms` — pushes tested images to GHCR
+2. Merge `dev` → `main` (squash)
+3. Reset dev to main (see merge workflow step 4)
+4. Run `./build.sh --publish --all-platforms` — pushes tested images to GHCR
 
 ## Binary list
 
