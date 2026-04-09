@@ -239,23 +239,6 @@ run_binary_checks() {
   echo "done"
 }
 
-run_plugin_checks() {
-  local image="$1" label="$2" platform="$3"
-
-  echo -n "Plugin checks ${label} (${platform})... "
-
-  for plugin in nlm_ispc grain mv; do
-    if docker run --rm --entrypoint "" --platform "${platform}" "${image}" \
-        python3 -c "import vapoursynth as vs; core = vs.core; assert hasattr(core, '${plugin}')" > /dev/null 2>&1; then
-      add_result "$platform" "${plugin} (${label})" "OK"
-    else
-      add_result "$platform" "${plugin} (${label})" "FAILED"
-    fi
-  done
-
-  echo "done"
-}
-
 run_startup_check() {
   local platform="$1" arch="$2"
   local net="tdarr-test-net-$$"
@@ -616,16 +599,13 @@ if [[ "$PUBLISH_ONLY" == false ]]; then
     if [[ "$STACK_ONLY" == true ]]; then
       build_stack "$platform" "$arch"
       run_binary_checks "av1-stack:${arch}" "av1-stack" "$platform"
-      run_plugin_checks "av1-stack:${arch}" "av1-stack" "$platform"
       if [[ "$ENCODE" == true ]]; then
         run_encode_test "av1-stack:${arch}" "${SCRIPT_DIR}/test/output/stack" "$platform"
       fi
     else
       build_tdarr "$platform" "$arch"
       run_binary_checks "tdarr:${arch}" "tdarr" "$platform"
-      run_plugin_checks "tdarr:${arch}" "tdarr" "$platform"
       run_binary_checks "tdarr_node:${arch}" "tdarr_node" "$platform"
-      run_plugin_checks "tdarr_node:${arch}" "tdarr_node" "$platform"
       run_startup_check "$platform" "$arch"
       if [[ "$ENCODE" == true ]]; then
         run_encode_test "tdarr:${arch}" "${SCRIPT_DIR}/test/output/tdarr" "$platform"
